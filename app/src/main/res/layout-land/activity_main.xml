@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:keepScreenOn="true"
+    tools:context="cn.com.magnity.coresdksample.MainActivity"
+    tools:layout_editor_absoluteX="0dp"
+    tools:layout_editor_absoluteY="73dp">
+
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/videoLayout"
+        android:layout_width="296dp"
+        android:layout_height="190dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintBottom_toTopOf="@+id/guideline14"
+        app:layout_constraintDimensionRatio="4:3"
+        app:layout_constraintEnd_toStartOf="@+id/guideline11"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/guideline12"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0">
+
+    </android.support.constraint.ConstraintLayout>
+
+
+    <Button
+        android:id="@+id/btnLink"
+        android:layout_width="70dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:text="@string/link"
+        app:layout_constraintBottom_toTopOf="@+id/btnOrigin"
+        app:layout_constraintHorizontal_bias="0.63"
+        app:layout_constraintLeft_toRightOf="@+id/videoLayout"
+        app:layout_constraintRight_toLeftOf="@+id/btnPlay"
+        app:layout_constraintStart_toStartOf="@+id/guideline11"
+        app:layout_constraintTop_toBottomOf="@+id/tvTitle"
+        app:layout_constraintVertical_bias="0.51" />
+
+    <Button
+        android:id="@+id/btnPlay"
+        android:layout_width="70dp"
+        android:layout_height="40dp"
+        android:text="@string/play"
+        app:layout_constraintBottom_toTopOf="@+id/btnCunrrent"
+        app:layout_constraintLeft_toRightOf="@+id/btnLink"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvTitle" />
+
+    <Button
+        android:id="@+id/btnOrigin"
+        android:layout_width="70dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:text="@string/stop"
+        app:layout_constraintBottom_toTopOf="@+id/btnFFC"
+        app:layout_constraintLeft_toRightOf="@+id/videoLayout"
+        app:layout_constraintRight_toLeftOf="@+id/btnCunrrent"
+        app:layout_constraintStart_toStartOf="@+id/guideline11"
+        app:layout_constraintTop_toBottomOf="@+id/btnLink" />
+
+    <Button
+        android:id="@+id/btnCunrrent"
+        android:layout_width="70dp"
+        android:layout_height="40dp"
+        android:text="@string/dislink"
+        app:layout_constraintBottom_toTopOf="@+id/btnafter"
+        app:layout_constraintLeft_toRightOf="@+id/btnOrigin"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnPlay" />
+
+    <Button
+        android:id="@+id/btnafter"
+        android:layout_width="70dp"
+        android:layout_height="40dp"
+        android:text="@string/save_pic"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@+id/btnFFC"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnCunrrent" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="@string/camera_list"
+        app:layout_constraintLeft_toRightOf="@+id/videoLayout"
+        app:layout_constraintStart_toStartOf="@+id/guideline11"
+        app:layout_constraintTop_toTopOf="@+id/guideline14" />
+
+    <Button
+        android:id="@+id/btnFFC"
+        android:layout_width="70dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:text="@string/rotate"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@+id/videoLayout"
+        app:layout_constraintRight_toLeftOf="@+id/btnafter"
+        app:layout_constraintStart_toStartOf="@+id/guideline11"
+        app:layout_constraintTop_toBottomOf="@+id/btnOrigin" />
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/selected_device_text"
+        app:layout_constraintLeft_toRightOf="@+id/videoLayout"
+        app:layout_constraintStart_toStartOf="@+id/guideline11"
+        app:layout_constraintTop_toBottomOf="@+id/listDev" />
+
+    <TextView
+        android:id="@+id/tvSelectedName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="212dp"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/colorPrimaryDark"
+        app:layout_constraintLeft_toRightOf="@+id/tvTitle"
+        app:layout_constraintTop_toBottomOf="@+id/listDev" />
+
+    <ListView
+        android:id="@+id/listDev"
+        android:layout_width="164dp"
+        android:layout_height="77dp"
+        android:layout_marginRight="8dp"
+        android:background="#ffcccccc"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintLeft_toRightOf="@+id/videoLayout"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/guideline11"
+        app:layout_constraintTop_toBottomOf="@+id/textView" />
+
+
+    <ImageView
+        android:id="@+id/iv_origin"
+        android:layout_width="299dp"
+        android:layout_height="209dp"
+        app:layout_constraintBottom_toTopOf="@+id/guideline14"
+        app:layout_constraintEnd_toStartOf="@+id/guideline12"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@mipmap/xx"
+        tools:ignore="MissingConstraints" />
+
+    <ImageView
+        android:id="@+id/iv_FFC"
+        android:layout_width="291dp"
+        android:layout_height="211dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/guideline12"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/guideline14"
+        app:srcCompat="@mipmap/xx" />
+
+    <ImageView
+        android:id="@+id/iv_after"
+        android:layout_width="300dp"
+        android:layout_height="203dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/guideline11"
+        app:layout_constraintStart_toStartOf="@+id/guideline12"
+        app:layout_constraintTop_toTopOf="@+id/guideline14"
+        app:srcCompat="@mipmap/xx" />
+
+    <TextView
+        android:id="@+id/tv_origin"
+        android:layout_width="wrap_content"
+        android:layout_height="15dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="原始数据图"
+        android:textColor="#0be721"
+        app:layout_constraintStart_toStartOf="@+id/iv_origin"
+        app:layout_constraintTop_toTopOf="@+id/iv_origin" />
+
+    <TextView
+        android:id="@+id/tv_FFC"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="校准FFC图"
+        android:textColor="#0be721"
+        app:layout_constraintStart_toStartOf="@+id/iv_FFC"
+        app:layout_constraintTop_toTopOf="@+id/iv_FFC"
+        tools:ignore="MissingConstraints" />
+
+    <TextView
+        android:id="@+id/tv_after"
+        android:layout_width="140dp"
+        android:layout_height="24dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="校准后的图"
+        android:textColor="#0be721"
+        app:layout_constraintStart_toStartOf="@+id/iv_after"
+        app:layout_constraintTop_toTopOf="@+id/iv_after" />
+
+    <android.support.constraint.Guideline
+        android:id="@+id/guideline11"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_end="250dp" />
+
+    <android.support.constraint.Guideline
+        android:id="@+id/guideline12"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_begin="340dp" />
+
+    <android.support.constraint.Guideline
+        android:id="@+id/guideline14"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_begin="231dp" />
+
+    <ImageView
+        android:id="@+id/iv_current"
+        android:layout_width="216dp"
+        android:layout_height="208dp"
+        app:layout_constraintBottom_toTopOf="@+id/guideline14"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/guideline11"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@mipmap/xx" />
+
+    <TextView
+        android:id="@+id/tv_current"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="当前照片"
+        android:textColor="#0be721"
+        app:layout_constraintStart_toStartOf="@+id/iv_current"
+        app:layout_constraintTop_toTopOf="@+id/iv_current" />
+
+
+</android.support.constraint.ConstraintLayout>
