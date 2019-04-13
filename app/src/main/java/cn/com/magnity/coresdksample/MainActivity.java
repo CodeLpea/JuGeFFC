@@ -29,6 +29,8 @@ import cn.com.magnity.coresdk.MagDevice;
 import cn.com.magnity.coresdk.types.EnumInfo;
 import cn.com.magnity.coresdksample.Util.photoUtil;
 
+import static cn.com.magnity.coresdksample.Util.FFCUtil.getFFC;
+
 public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCallback {
     //const
     private static final int START_TIMER_ID = 0;
@@ -380,8 +382,9 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                     mVideoFragment.stopDrawingThread();
                     mDev.setImageTransform(0, mDegree);
                     play();*/
-
-                    FFC();
+                    int []temps=Origin();
+                    Current();
+                    FFC(temps);
 
                     break;
                 case R.id.btnafter:
@@ -392,7 +395,20 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         }
     }
 
-    private void FFC() {//从原始数据图中计算出FFC校准图
+    private void FFC(int[] temps) {//从原始数据图中计算出FFC校准图
+        int []temp;
+        temp=getFFC(temps);
+        final Bitmap bitmaps;
+        bitmaps=photoUtil.CovertToBitMap(temp,0,100000);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bitmaps.compress(Bitmap.CompressFormat.PNG, 100, baos);
+                byte[] bytes=baos.toByteArray();
+                Glide.with(MainActivity.this).load(bytes).into(iv_FFC);
+            }
+        });
 
 
     }
@@ -441,7 +457,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
 
        }
    }
-    private void Origin() {//获得原始图片
+    private int[] Origin() {//获得原始图片
         mDev.lock();
         int[] temps = new int[160*120];
         mDev.getTemperatureData(temps,false,false);
@@ -457,5 +473,6 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                 Glide.with(MainActivity.this).load(bytes).into(iv_origin);
             }
         });
+        return temps;
     }
 }
