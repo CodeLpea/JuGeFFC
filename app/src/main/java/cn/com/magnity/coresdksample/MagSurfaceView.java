@@ -24,7 +24,6 @@ import cn.com.magnity.coresdk.types.CameraInfo;
 import cn.com.magnity.coresdk.types.StatisticInfo;
 import cn.com.magnity.coresdksample.Util.TempUtil;
 
-import static cn.com.magnity.coresdksample.MyApplication.getTemp;
 
 public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
     private volatile boolean mIsDrawing;

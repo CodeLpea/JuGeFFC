@@ -30,13 +30,13 @@ import java.util.ArrayList;
 
 import cn.com.magnity.coresdk.MagDevice;
 import cn.com.magnity.coresdk.types.EnumInfo;
+import cn.com.magnity.coresdksample.Util.FFCUtil;
 import cn.com.magnity.coresdksample.Util.TempUtil;
 
 import static cn.com.magnity.coresdksample.Util.FFCUtil.getFFC;
-import static cn.com.magnity.coresdksample.Util.logSave.readFfc;
-import static cn.com.magnity.coresdksample.Util.logSave.saveIntFfc;
 
 public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCallback {
+    private static final String TAG = "MainActivity";
     //const
     private static final int START_TIMER_ID = 0;
     private static final int TIMER_INTERVAL = 500;//ms
@@ -395,15 +395,28 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                 case R.id.btnafter:
                     int []Orgintemps=Origin();
                     Current();
-                    int []readeFfc=readFfc();
+                    int []readeFfc=FFCUtil.readFfc();
                     for(int i=0;i<readeFfc.length;i++){
                         readeFfc[i]=readeFfc[i]-10000;//还原真实差距
                     }
                     if(readeFfc.length<10){
                         Toast.makeText(MainActivity.this, "请先校准FFC", Toast.LENGTH_SHORT).show();
                     }else {
-                        AfterFfc(Orgintemps,readeFfc);
+                      int []afterFfcTemps= AfterFfc(Orgintemps,readeFfc);
+                      int Orgintempsmaxmin[]= TempUtil.MaxMinTemp(Orgintemps);//找出原始数据的最大最小值
+                      int afterFfcTempsmaxmin[]= TempUtil.MaxMinTemp(afterFfcTemps);//找出补偿后的最大最小值
+                      Log.i(TAG, "Orgintempsmaxmin[0]:          "+Orgintempsmaxmin[0]);
+                      Log.i(TAG, "afterFfcTempsmaxmin[0]:       "+afterFfcTempsmaxmin[0]);
+
+                      /*测试自定义的在指定矩形区域寻找最大值*/
+                      int maxafterFfcTemps= TempUtil.DDNgetRectTemperatureInfo(afterFfcTemps,0,160,0,120);//获取指定矩形区域中最大的值
+                      int maxOrgintemps= TempUtil.DDNgetRectTemperatureInfo(Orgintemps,0,160,0,120);//获取指定矩形区域中最大的值
+
+                      Log.i(TAG, "maxOrgintemps:     "+maxOrgintemps);
+                      Log.i(TAG, "maxafterFfcTemps: "+maxafterFfcTemps);
                     }
+
+
 
 
                     break;
@@ -414,7 +427,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
 /**
  * 根据已经得到的校准图，对原始数据进行校准
  * */
-    private void AfterFfc(int[] orgintemps, int[] readeFfc) {//根据已经得到的校准图，对原始数据进行校准
+    private int[] AfterFfc(int[] orgintemps, int[] readeFfc) {//根据已经得到的校准图，对原始数据进行校准
         int []AfterTemps=new int[orgintemps.length];
         for(int i=0;i<AfterTemps.length;i++){
             AfterTemps[i]=orgintemps[i]-readeFfc[i];
@@ -444,6 +457,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                 Glide.with(MainActivity.this).load(bytes).into(iv_after);
             }
         });
+        return AfterTemps;
 
     }
     /**
@@ -459,7 +473,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
     private void FFC(int[] temps) {//从原始数据图中计算出FFC校准图
         int []Ffctemp;
         Ffctemp=getFFC(temps);//获得FFC的校准图
-        saveIntFfc(Ffctemp);//保存校准图
+        FFCUtil.saveIntFfc(Ffctemp);//保存校准图
 /*显示校准图：*/
         final Bitmap bitmaps;
         bitmaps= TempUtil.CovertToBitMap(Ffctemp,0,100000);
