@@ -44,11 +44,13 @@ public class FlieUtil {
 
         return turn;
     }
+
     /**
      * 检查是否存在文件
      * */
-    public static  boolean isExistFlie(File file){
+    public static  boolean DeleExistFlie(String path){
         boolean turn=false;
+        File file = new File(path);
         if (!file.exists()) {
             try {
                 file.createNewFile();
@@ -56,6 +58,7 @@ public class FlieUtil {
             }
             turn=false;//没有，自动创建
         }else {
+            file.delete();
             turn=true;//有
         }
 

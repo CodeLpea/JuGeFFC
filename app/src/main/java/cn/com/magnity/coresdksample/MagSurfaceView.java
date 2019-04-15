@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import cn.com.magnity.coresdk.MagDevice;
 import cn.com.magnity.coresdk.types.CameraInfo;
 import cn.com.magnity.coresdk.types.StatisticInfo;
+import cn.com.magnity.coresdksample.Util.TempUtil;
 
 import static cn.com.magnity.coresdksample.MyApplication.getTemp;
 
@@ -146,27 +147,48 @@ public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
         bmp = mDev.getOutputImage();
         mDev.getFrameStatisticInfo(info);
         mDev.getCameraInfo(cameraInfo);
-
-        final int[] temps = new int[cameraInfo.bmpHeight*cameraInfo.bmpWidth];
-        mDev.getTemperatureData(temps,false,false);
-
-       /* Log.i("drawImage", temps.toString());
-         new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    getTemp.saveLog("完整温度",temps);
-                 *//*   getTemp.saveLog("完整温度",formatStr+":  "+temps.toString()+"\r\n");*//*
-                }
-            }).start();
-*/
-
         mDev.unlock();
-
         if (bmp != null) {
             canvas.drawBitmap(bmp, null, dstRect, null);
             drawMaxTemp(canvas, dstRect, cameraInfo, info, paint);
             drawMinTemp(canvas, dstRect, cameraInfo, info, paint);
+            // drawAnyTemp(canvas, dstRect, cameraInfo, info, paint);
         }
+
+        //showTemperatureDataVideo(canvas,dstRect);//使用原始数据作为视频流
+
+
+    }
+/**
+ * 使用原始数据作为视频流
+ * */
+    private void showTemperatureDataVideo(Canvas canvas, Rect dstRect) {
+             mDev.lock();
+        int[] temps = new int[160*120];
+        mDev.getTemperatureData(temps,false,false);
+        mDev.unlock();
+        final Bitmap bitmap;
+        bitmap= TempUtil.CovertToBitMap(temps,0,100);
+        Bitmap bitmap1=bitmap.copy(Bitmap.Config.ARGB_8888, true);
+        canvas.drawBitmap(bitmap1, null, dstRect, null);
+    }
+
+    /**
+ * 获取任意位置的温度
+ * */
+    private void drawAnyTemp(Canvas canvas, Rect dstRect, CameraInfo cameraInfo, StatisticInfo info, Paint paint) {
+        int [] infos=new int[5];
+        int [] infos2=new int[5];
+        /*boolean result=mDev.getRectTemperatureInfo(10,10,50,50,infos);*/
+        int result=mDev.getTemperatureProbe(50,50,1);
+        Log.i("drawAnyTemp result", String.valueOf(result));
+      //  Log.i("drawAnyTemp MaxTemp: ", String.valueOf(infos[1]));
+       /* boolean result2=mDev.getRectTemperatureInfo(60,60,100,100,infos2);*/
+        int result2=mDev.getTemperatureProbe(100,100,1);
+        Log.i("drawAnyTemp result2", String.valueOf(result2));
+        //Log.i("drawAnyTemp MaxTemp2: ", String.valueOf(infos[1]));
+
+
     }
 
     private void drawMaxTemp(Canvas canvas, Rect dstRect, CameraInfo cameraInfo,

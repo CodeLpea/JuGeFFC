@@ -2,6 +2,9 @@ package cn.com.magnity.coresdksample;
 
 import android.Manifest;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
@@ -27,9 +30,11 @@ import java.util.ArrayList;
 
 import cn.com.magnity.coresdk.MagDevice;
 import cn.com.magnity.coresdk.types.EnumInfo;
-import cn.com.magnity.coresdksample.Util.photoUtil;
+import cn.com.magnity.coresdksample.Util.TempUtil;
 
 import static cn.com.magnity.coresdksample.Util.FFCUtil.getFFC;
+import static cn.com.magnity.coresdksample.Util.logSave.readFfc;
+import static cn.com.magnity.coresdksample.Util.logSave.saveIntFfc;
 
 public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCallback {
     //const
@@ -388,23 +393,95 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
 
                     break;
                 case R.id.btnafter:
+                    int []Orgintemps=Origin();
+                    Current();
+                    int []readeFfc=readFfc();
+                    for(int i=0;i<readeFfc.length;i++){
+                        readeFfc[i]=readeFfc[i]-10000;//还原真实差距
+                    }
+                    if(readeFfc.length<10){
+                        Toast.makeText(MainActivity.this, "请先校准FFC", Toast.LENGTH_SHORT).show();
+                    }else {
+                        AfterFfc(Orgintemps,readeFfc);
+                    }
+
 
                     break;
             }
             mDevList.requestFocus();
         }
     }
-
-    private void FFC(int[] temps) {//从原始数据图中计算出FFC校准图
-        int []temp;
-        temp=getFFC(temps);
+/**
+ * 根据已经得到的校准图，对原始数据进行校准
+ * */
+    private void AfterFfc(int[] orgintemps, int[] readeFfc) {//根据已经得到的校准图，对原始数据进行校准
+        int []AfterTemps=new int[orgintemps.length];
+        for(int i=0;i<AfterTemps.length;i++){
+            AfterTemps[i]=orgintemps[i]-readeFfc[i];
+        }
         final Bitmap bitmaps;
-        bitmaps=photoUtil.CovertToBitMap(temp,0,100000);
+        bitmaps= TempUtil.CovertToBitMap(AfterTemps,0,100000);
+
+        int maxmin[]= TempUtil.MaxMinTemp(AfterTemps);//找出最大最小值
+        final int max=maxmin[0];
+        final int min=maxmin[1];
+
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                Bitmap bitmap1=bitmaps.copy(Bitmap.Config.ARGB_8888, true);
+                Canvas canvas = new Canvas(bitmap1);
+                Paint paint = new Paint();
+                paint.setTextSize(15);
+                paint.setColor(Color.GREEN);
+                canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
+                canvas.drawText("Min: "+String.valueOf(min),20,40,paint);
+
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bitmaps.compress(Bitmap.CompressFormat.PNG, 100, baos);
+                bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
+
+                byte[] bytes=baos.toByteArray();
+                Glide.with(MainActivity.this).load(bytes).into(iv_after);
+            }
+        });
+
+    }
+    /**
+     * 从原始数据图中计算出FFC校准图
+     * 获取到FFC
+     * 原始数据，默认为拍摄一个均匀温度面
+     * 算出平均值，并将每个店与平局值进行减
+     * 并再减的基础上增加10度，也就是增加10000
+     *
+     * 并保存FFC得到的int[]
+     * 以便之后的使用
+     * */
+    private void FFC(int[] temps) {//从原始数据图中计算出FFC校准图
+        int []Ffctemp;
+        Ffctemp=getFFC(temps);//获得FFC的校准图
+        saveIntFfc(Ffctemp);//保存校准图
+/*显示校准图：*/
+        final Bitmap bitmaps;
+        bitmaps= TempUtil.CovertToBitMap(Ffctemp,0,100000);
+
+        int maxmin[]= TempUtil.MaxMinTemp(Ffctemp);//找出最大最小值
+        final int max=maxmin[0];
+        final int min=maxmin[1];
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                Bitmap bitmap1=bitmaps.copy(Bitmap.Config.ARGB_8888, true);
+                Canvas canvas = new Canvas(bitmap1);
+                Paint paint = new Paint();
+                paint.setTextSize(15);
+                paint.setColor(Color.GREEN);
+                canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
+                canvas.drawText("Min: "+String.valueOf(min),20,40,paint);
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
+
                 byte[] bytes=baos.toByteArray();
                 Glide.with(MainActivity.this).load(bytes).into(iv_FFC);
             }
@@ -412,7 +489,10 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
 
 
     }
-
+/**
+ * 根据默认的方法
+ * 获得当前图像
+ * */
     private void Current() {//获得当前图像
         if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
             return;
@@ -457,18 +537,35 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
 
        }
    }
+
+   /**
+    * 根据
+    * mDev.getTemperatureData(temps,false,false);
+    * 获得原始图片
+    * */
     private int[] Origin() {//获得原始图片
         mDev.lock();
         int[] temps = new int[160*120];
-        mDev.getTemperatureData(temps,false,false);
+        mDev.getTemperatureData(temps,true,true);
         mDev.unlock();
         final Bitmap bitmap;
-        bitmap=photoUtil.CovertToBitMap(temps,0,100);
+        bitmap= TempUtil.CovertToBitMap(temps,0,100);
+        int maxmin[]= TempUtil.MaxMinTemp(temps);//找出最大最小值
+        final int max=maxmin[0];
+        final int min=maxmin[1];
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                Bitmap bitmap1=bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                Canvas canvas = new Canvas(bitmap1);
+                Paint paint = new Paint();
+                paint.setTextSize(15);
+                paint.setColor(Color.GREEN);
+                canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
+                canvas.drawText("Min: "+String.valueOf(min),20,40,paint);
+
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+                bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
                 byte[] bytes=baos.toByteArray();
                 Glide.with(MainActivity.this).load(bytes).into(iv_origin);
             }

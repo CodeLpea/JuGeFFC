@@ -44,44 +44,6 @@ public class FFCUtil {
         return Total/a.length;
     }
 
-    /**
-     * 保存FFC
-     */
-    public static void saveFFC(int[] a) {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS");
-        String formatStr = formatter.format(new Date());
-        String num = intToString(a);
-        File file1 = Environment.getExternalStorageDirectory();
-        file1 = new File(file1, "Temp/");
-        if (!file1.exists()) {
-            file1.mkdirs();
-        }
-        String path = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "Temp" + File.separator + "FFC.txt";
-        FlieUtil.isExistFlie(path);
-        File files1 = new File(path);
-        FileWriter file = null;
-            try {
-                file = new FileWriter(files1, true);
-                file.write(formatStr + ": " + num + "\r\n");
-                file.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
 
-    }
-
-    public static String intToString(int[] a){
-        StringBuilder stringBuilder=new StringBuilder();
-        int count=0;
-        for(int i=0;i<a.length;i++){
-            if(i%160==0){
-                stringBuilder.append("\r\n");
-                //count=0;
-            }
-            stringBuilder.append(a[i]).append(",");
-        }
-        stringBuilder.deleteCharAt(stringBuilder.length()-1);
-        return stringBuilder.toString();
-    }
 
 }

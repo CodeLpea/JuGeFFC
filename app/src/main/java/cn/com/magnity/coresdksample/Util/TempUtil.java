@@ -12,7 +12,7 @@ import java.io.IOException;
 
 import static android.content.ContentValues.TAG;
 
-public class photoUtil {
+public class TempUtil {
     private static int m_FrameHeight=120;
     private static int m_FrameWidth=160;
 
@@ -24,7 +24,7 @@ public class photoUtil {
 
         Bitmap bmp = null;
         //找到数组中的最大值和最小值
-        int l_data_max = 100000;
+        int l_data_max = 33000;
         int l_data_min = 0;
         // Log.i(TAG, "l_data_max : " + (int)l_data_max + " l_data_min : " + (int)l_data_min);
         //根据红外照片值换算成对应的颜色值
@@ -37,7 +37,7 @@ public class photoUtil {
             for (int imageCol = 0; imageCol < m_FrameWidth; ++imageCol)
             {
                 int baseValue = data[m_FrameWidth * imageRow  + imageCol]; // take input value in [0, 65536)
-                int scaledValue = (int)(256 * (baseValue - l_data_min) / diff); // map value to interval [0, 256), and set the pixel to its color value above
+                char scaledValue = (char)(256 * (baseValue - l_data_min) / diff); // map value to interval [0, 256), and set the pixel to its color value above
                 int index = 3 * scaledValue;
                 if(index < (colormap_size - 2))
                 {
@@ -104,6 +104,25 @@ public class photoUtil {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+    }
+
+    public static int[] MaxMinTemp(int temps[]){
+        int []MaxMin=new int[2];
+        int i,min,max;
+
+        min=max=temps[0];
+        for(i=0;i<temps.length;i++)
+        {
+            if(temps[i]>max)   // 判断最大值
+                max=temps[i];
+            if(temps[i]<min)   // 判断最小值
+                min=temps[i];
+        }
+        System.out.println("\nTemp最大值是："+max); // 输出最大值
+        System.out.println("Temp最小值是："+min); // 输出最小值
+        MaxMin[0]=max;
+        MaxMin[1]=min;
+        return MaxMin;
     }
 
 }
