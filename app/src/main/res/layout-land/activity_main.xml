@@ -223,7 +223,7 @@
         app:layout_constraintGuide_begin="231dp" />
 
     <ImageView
-        android:id="@+id/iv_current"
+        android:id="@+id/iv_Compare"
         android:layout_width="216dp"
         android:layout_height="208dp"
         app:layout_constraintBottom_toTopOf="@+id/guideline14"
@@ -238,10 +238,10 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
-        android:text="当前照片"
+        android:text="与上一张照片的差"
         android:textColor="#0be721"
-        app:layout_constraintStart_toStartOf="@+id/iv_current"
-        app:layout_constraintTop_toTopOf="@+id/iv_current" />
+        app:layout_constraintStart_toStartOf="@+id/iv_Compare"
+        app:layout_constraintTop_toTopOf="@+id/iv_Compare" />
 
 
 </android.support.constraint.ConstraintLayout>

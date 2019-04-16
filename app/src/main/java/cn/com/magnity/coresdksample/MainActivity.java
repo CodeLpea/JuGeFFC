@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import cn.com.magnity.coresdk.MagDevice;
 import cn.com.magnity.coresdk.types.EnumInfo;
 import cn.com.magnity.coresdksample.Util.FFCUtil;
+import cn.com.magnity.coresdksample.Util.SaveTemps;
 import cn.com.magnity.coresdksample.Util.TempUtil;
 
 import static cn.com.magnity.coresdksample.Util.FFCUtil.getFFC;
@@ -68,7 +69,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
     private Runnable mRestoreRunnable;
     private VideoFragment mVideoFragment;
 
-    private ImageView iv_origin,iv_FFC,iv_after,iv_current;
+    private ImageView iv_origin,iv_FFC,iv_after, iv_compare;
     private TextView tv_origin,tv_FFC,tv_after,tv_current;
 
 
@@ -93,7 +94,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         iv_origin= (ImageView) findViewById(R.id.iv_origin);
         iv_FFC= (ImageView) findViewById(R.id.iv_FFC);
         iv_after= (ImageView) findViewById(R.id.iv_after);
-        iv_current= (ImageView) findViewById(R.id.iv_current);
+        iv_compare = (ImageView) findViewById(R.id.iv_Compare);
 
         tv_origin=(TextView)findViewById(R.id.tv_origin);
         tv_FFC=(TextView)findViewById(R.id.tv_FFC);
@@ -365,7 +366,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                     updateButtons();*/
                     // bitmap= BitmapFactory.decodeResource(getResources(),R.mipmap.ic_launcher);
                     Origin();
-                    Current();
+                    //Current();
 
 
                     break;
@@ -374,8 +375,8 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                     mVideoFragment.stopDrawingThread();
                     mDegree = 0;
                     updateButtons();*/
-                   Current();
-
+                  // Current();
+                    Origin();
 
                     break;
                 case R.id.btnFFC://获取FFC图像
@@ -388,21 +389,32 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                     mDev.setImageTransform(0, mDegree);
                     play();*/
                     int []temps=Origin();
-                    Current();
-                    FFC(temps);
+                    //Current();
+                    int []readeFfcs=FFC(temps);
+
+                  /*   int []readeFfcs=FFCUtil.readFfc();*/
+                  /*  for(int i=0;i<readeFfcs.length;i++){
+                        readeFfcs[i]=readeFfcs[i]-10000;//还原真实差距
+                    }*/
+                    if(readeFfcs.length<10){
+                        Toast.makeText(MainActivity.this, "请先校准FFC", Toast.LENGTH_SHORT).show();
+                    }else {
+                        int []afterFfcTemps= AfterFfc(temps,readeFfcs);//将原始数据通过FFc数据处理
+
+                    }
+
+
 
                     break;
                 case R.id.btnafter:
                     int []Orgintemps=Origin();
-                    Current();
+                    //Current();
                     int []readeFfc=FFCUtil.readFfc();
-                    for(int i=0;i<readeFfc.length;i++){
-                        readeFfc[i]=readeFfc[i]-10000;//还原真实差距
-                    }
+
                     if(readeFfc.length<10){
                         Toast.makeText(MainActivity.this, "请先校准FFC", Toast.LENGTH_SHORT).show();
                     }else {
-                      int []afterFfcTemps= AfterFfc(Orgintemps,readeFfc);
+                      int []afterFfcTemps= AfterFfc(Orgintemps,readeFfc);//将原始数据通过FFc数据处理
                       int Orgintempsmaxmin[]= TempUtil.MaxMinTemp(Orgintemps);//找出原始数据的最大最小值
                       int afterFfcTempsmaxmin[]= TempUtil.MaxMinTemp(afterFfcTemps);//找出补偿后的最大最小值
                       Log.i(TAG, "Orgintempsmaxmin[0]:          "+Orgintempsmaxmin[0]);
@@ -432,6 +444,9 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         for(int i=0;i<AfterTemps.length;i++){
             AfterTemps[i]=orgintemps[i]-readeFfc[i];
         }
+
+        SaveTemps.saveIntTemps(AfterTemps,"After");//保存FFC校准后的数据
+
         final Bitmap bitmaps;
         bitmaps= TempUtil.CovertToBitMap(AfterTemps,0,100000);
 
@@ -470,12 +485,19 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
      * 并保存FFC得到的int[]
      * 以便之后的使用
      * */
-    private void FFC(int[] temps) {//从原始数据图中计算出FFC校准图
+    private int[] FFC(int[] temps) {//从原始数据图中计算出FFC校准图
         int []Ffctemp;
         Ffctemp=getFFC(temps);//获得FFC的校准图
+
+        SaveTemps.saveIntTemps(Ffctemp,"FFC");//保存FFC数据
+
         FFCUtil.saveIntFfc(Ffctemp);//保存校准图
 /*显示校准图：*/
         final Bitmap bitmaps;
+        //每个点加10显示
+        for(int i=0;i<Ffctemp.length;i++){
+            Ffctemp[i]=Ffctemp[i]+10000;
+        }
         bitmaps= TempUtil.CovertToBitMap(Ffctemp,0,100000);
 
         int maxmin[]= TempUtil.MaxMinTemp(Ffctemp);//找出最大最小值
@@ -501,8 +523,47 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
             }
         });
 
+        return Ffctemp;
 
     }
+    private int[]beforeTemps;
+    private void Compare(int NowTemps[]) {//获得当前原始数据与上一张原始数据的差图
+        if(beforeTemps!=null){
+
+        final Bitmap bitmap;
+        int compareTemps[]=new int[beforeTemps.length];
+        for(int i=0;i<beforeTemps.length;i++){
+            compareTemps[i]=NowTemps[i]-beforeTemps[i];
+        }
+
+        SaveTemps.saveIntTemps(compareTemps,"Compare");//保存比较后的数据
+
+        bitmap= TempUtil.CovertToBitMap(compareTemps,0,100);
+        int maxmin[]= TempUtil.MaxMinTemp(compareTemps);//找出最大最小值
+        final int max=maxmin[0];
+        final int min=maxmin[1];
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Bitmap bitmap1=bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                Canvas canvas = new Canvas(bitmap1);
+                Paint paint = new Paint();
+                paint.setTextSize(15);
+                paint.setColor(Color.GREEN);
+                canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
+                canvas.drawText("Min: "+String.valueOf(min),20,40,paint);
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
+                byte[] bytes=baos.toByteArray();
+                Glide.with(MainActivity.this).load(bytes).into(iv_compare);
+            }
+        });
+
+        }
+    }
+
+
 /**
  * 根据默认的方法
  * 获得当前图像
@@ -537,7 +598,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
             @Override
             public void run() {
                 File fileIv = new File(finalFile, paths);
-                Glide.with(MainActivity.this).load(fileIv).into(iv_current);
+                Glide.with(MainActivity.this).load(fileIv).into(iv_compare);
             }
         };
         //加载图片
@@ -563,6 +624,11 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         mDev.getTemperatureData(temps,true,true);
         mDev.unlock();
         final Bitmap bitmap;
+        Compare(temps);//与上一张进行比较
+        beforeTemps=temps;//缓存上一张。
+
+        SaveTemps.saveIntTemps(temps,"Origin");//保存原始数据
+
         bitmap= TempUtil.CovertToBitMap(temps,0,100);
         int maxmin[]= TempUtil.MaxMinTemp(temps);//找出最大最小值
         final int max=maxmin[0];

@@ -21,7 +21,7 @@ import java.util.Date;
 public class FFCUtil {
     private static BufferedWriter bufferedWriter;
     private static BufferedReader bufferedReader;
-    private static   String path = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "Temp" + File.separator + "getTempratureData.txt";
+    private static   String path = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "Temp" + File.separator + "FFC.txt";
 
     public FFCUtil() {
     }
@@ -35,7 +35,7 @@ public class FFCUtil {
     public static int[] getFFC(int[] a) {
         int avg=intAvg(a);
         for(int i=0;i<a.length;i++){
-            a[i]=a[i]-avg+10000;
+            a[i]=a[i]-avg;
         }
         //保存
         //saveFFC(a);

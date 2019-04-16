@@ -3,7 +3,7 @@
     <string name="link">连接</string>
     <string name="play">播放</string>
     <string name="stop">原始</string>
-    <string name="dislink">当前</string>
+    <string name="dislink">比较</string>
     <string name="rotate">FFC</string>
     <string name="save_pic">校准</string>
     <string name="camera_list">相机列表</string>
