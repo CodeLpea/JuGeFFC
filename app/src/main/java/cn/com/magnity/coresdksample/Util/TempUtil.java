@@ -17,12 +17,12 @@ import static android.content.ContentValues.TAG;
  * 获取指定矩形区域的最大最小值
  * */
 public class TempUtil {
-    private static int m_FrameHeight=120;//高120
-    private static int m_FrameWidth=160;//宽度160
+    public static int m_FrameHeight=120;//高120
+    public static int m_FrameWidth=160;//宽度160
 
     public static Bitmap CovertToBitMap(int[] date, int min, int max){
 
-       int[] data= ReLoadY(date);
+        int[] data= ReLoadY(date);
 
         data=ReLoadX(data);
 
@@ -53,6 +53,11 @@ public class TempUtil {
         }
         bmp = Bitmap.createBitmap(imageColors,m_FrameWidth, m_FrameHeight, Bitmap.Config.ARGB_8888);
         return bmp;
+    }
+    public static int[] ReLoad(int[] data) {
+         data= ReLoadY(data);
+         data=ReLoadX(data);
+         return data;
     }
 
     private static int[] ReLoadX(int[] data) {
@@ -111,8 +116,8 @@ public class TempUtil {
     }
 
     public static int[] MaxMinTemp(int temps[]){
-        int []MaxMin=new int[2];
-        int i,min,max;
+        int []MaxMin=new int[3];
+        int i,min,max,total = 0,avg;
 
         min=max=temps[0];
         for(i=0;i<temps.length;i++)
@@ -121,11 +126,14 @@ public class TempUtil {
                 max=temps[i];
             if(temps[i]<min)   // 判断最小值
                 min=temps[i];
+            total=total+temps[i];
         }
+        avg=total/temps.length;
       /*  Log.i(TAG, "\nTemp最大值是： "+max); // 输出最大值
         Log.i(TAG, "Temp最小值是：   "+min); // 输出最小值*/
         MaxMin[0]=max;
         MaxMin[1]=min;
+        MaxMin[2]=avg;
         return MaxMin;
     }
 /**
@@ -134,7 +142,62 @@ public class TempUtil {
  * x:0-160 m_FrameWidth
  * y:0-120 m_FrameHeight
  * */
-    public static int DDNgetRectTemperatureInfo(int[] temps,int x0,int x1,int y0,int y1){
+    public static int[] DDNgetRectTemperatureInfo(int[] temps,int x0,int x1,int y0,int y1){
+
+        int [] Maxresult=new int[3];
+
+
+
+        int[][]b=new int[m_FrameWidth][m_FrameHeight];
+        for(int i=0;i<temps.length;i++){
+            b[i%m_FrameWidth][i/m_FrameWidth]=temps[i];//将一维数组转换为2维数组，坐标原点为（0，0）
+        }
+
+        for (int i = x0; i < x1; i++) {
+            for (int k= y0; k < y1; k++) {
+                if (Maxresult[0] < b[i][k]) {
+                    Maxresult[0] = b[i][k];//算出最大值
+                    Maxresult[1]=i;//最大值的位置x
+                    Maxresult[2]=k;//最大值的位置y
+
+                }
+
+            }
+
+        }
+      /*  Log.i(TAG, "\nMaxresult[1] XXXXXXXXX：         "+Maxresult[1]); // 输出X值
+        Log.i(TAG, "Maxresult[2]=i YYYYYYYYY：         "+Maxresult[2]); // 输出Y值
+        Log.i(TAG, "Maxresult[0]=i MMMMMMMMM：         "+Maxresult[0]); // 输出值
+*/
+        return Maxresult;
+    }
+
+    /**
+     * 九个点的平均值最大的区域
+     * */
+    public static int NineMaxAvgTemp(int x,int y,int temps[][]){
+        int area=4;//点到周围点的距离
+        int maxAvg=0;
+        int xlen=x%m_FrameWidth;//x点距离边界的距离
+        int ylen=y%m_FrameHeight;//y点距离边界的距离
+
+        if(xlen>area&&ylen>area&&xlen<m_FrameWidth-area&&ylen<m_FrameHeight-area){//不在边界时候
+            maxAvg=(temps[x][y]+temps[x][y-1]+temps[x][y+1]//中间列
+                    +temps[x-1][y-1]+temps[x-1][y]+temps[x-1][y+1]//左侧列
+                    +temps[x+1][y-1]+temps[x+1][y]+temps[x+1][y+1])/9;//右侧列
+        }
+        return maxAvg;
+    }
+
+
+
+    /* *//**
+     * 根据原始温度temps
+     * 获取指定区域的最高温度
+     * x:0-160 m_FrameWidth
+     * y:0-120 m_FrameHeight
+     * *//*
+    public static int[] DDNgetRectTemperatureInfo(int[] temps,int x0,int x1,int y0,int y1){
         int j=0;
         int[][]b=new int[m_FrameWidth][m_FrameHeight];
         for(int i=0;i<temps.length;i++){
@@ -144,22 +207,25 @@ public class TempUtil {
             b[j][i%m_FrameHeight]=temps[i];//将一维数组转换为2维数组，坐标原点为（0，0）
         }
 
-
+        int [] Maxresult=new int[3];
         int max = 0;
         int min = b[0][0];
         for (int i = x0; i < x1; i++) {
             for (int k= y0; k < y1; k++) {
-                if (max < b[i][k]) {
-                    max = b[i][k];//算出最大值
+                if (Maxresult[0] < b[i][k]) {
+                    Maxresult[0] = b[i][k];//算出最大值
+                    Maxresult[1]=i;//最大值的位置x
+                    Maxresult[2]=k;//最大值的位置y
+
                 }
-                if (min > b[i][k]) {
+               *//* if (min > b[i][k]) {
                     min = b[i][k];//算出最小值
-                }
+                }*//*
             }
         }
-       /* Log.i(TAG, "\nDDNgetRectTemperatureInfo最大值是：  "+max); // 输出最大值
-        Log.i(TAG, "DDNgetRectTemperatureInfo最小值是：    "+min); // 输出最小值*/
-        return max;
-    }
+       *//* Log.i(TAG, "\nDDNgetRectTemperatureInfo最大值是：  "+max); // 输出最大值
+        Log.i(TAG, "DDNgetRectTemperatureInfo最小值是：    "+min); // 输出最小值*//*
+        return Maxresult;
+    }*/
 
 }

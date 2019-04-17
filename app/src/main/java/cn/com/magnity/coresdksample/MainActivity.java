@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
@@ -34,7 +35,10 @@ import cn.com.magnity.coresdksample.Util.FFCUtil;
 import cn.com.magnity.coresdksample.Util.SaveTemps;
 import cn.com.magnity.coresdksample.Util.TempUtil;
 
+import static cn.com.magnity.coresdksample.MyApplication.FFCTemps;
 import static cn.com.magnity.coresdksample.Util.FFCUtil.getFFC;
+import static cn.com.magnity.coresdksample.Util.TempUtil.m_FrameHeight;
+import static cn.com.magnity.coresdksample.Util.TempUtil.m_FrameWidth;
 
 public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCallback {
     private static final String TAG = "MainActivity";
@@ -345,6 +349,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         } else if (result == MagDevice.CONN_DETACHED) {
             /* 设备拔出*/
         }
+        Log.i(TAG, "linkResult: "+result);
         updateButtons();
     }
 
@@ -421,11 +426,11 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                       Log.i(TAG, "afterFfcTempsmaxmin[0]:       "+afterFfcTempsmaxmin[0]);
 
                       /*测试自定义的在指定矩形区域寻找最大值*/
-                      int maxafterFfcTemps= TempUtil.DDNgetRectTemperatureInfo(afterFfcTemps,0,160,0,120);//获取指定矩形区域中最大的值
-                      int maxOrgintemps= TempUtil.DDNgetRectTemperatureInfo(Orgintemps,0,160,0,120);//获取指定矩形区域中最大的值
+                      int []maxafterFfcTemps= TempUtil.DDNgetRectTemperatureInfo(afterFfcTemps,0,160,0,120);//获取指定矩形区域中最大的值
+                      int []maxOrgintemps= TempUtil.DDNgetRectTemperatureInfo(Orgintemps,0,160,0,120);//获取指定矩形区域中最大的值
 
-                      Log.i(TAG, "maxOrgintemps:     "+maxOrgintemps);
-                      Log.i(TAG, "maxafterFfcTemps: "+maxafterFfcTemps);
+                      Log.i(TAG, "maxOrgintemps[0]:     "+maxOrgintemps[0]);
+                      Log.i(TAG, "maxafterFfcTemps: "+maxafterFfcTemps[0]);
                     }
 
 
@@ -445,7 +450,6 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
             AfterTemps[i]=orgintemps[i]-readeFfc[i];
         }
 
-        SaveTemps.saveIntTemps(AfterTemps,"After");//保存FFC校准后的数据
 
         final Bitmap bitmaps;
         bitmaps= TempUtil.CovertToBitMap(AfterTemps,0,100000);
@@ -453,6 +457,8 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         int maxmin[]= TempUtil.MaxMinTemp(AfterTemps);//找出最大最小值
         final int max=maxmin[0];
         final int min=maxmin[1];
+        final int avg=maxmin[2];
+        SaveTemps.saveIntTemps(AfterTemps,"After",maxmin);//保存FFC校准后的数据
 
         runOnUiThread(new Runnable() {
             @Override
@@ -489,12 +495,15 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         int []Ffctemp;
         Ffctemp=getFFC(temps);//获得FFC的校准图
 
-        SaveTemps.saveIntTemps(Ffctemp,"FFC");//保存FFC数据
+        FFCTemps=Ffctemp;
+
+        int maxmin1[]= TempUtil.MaxMinTemp(Ffctemp);//找出最大最小值
+        SaveTemps.saveIntTemps(Ffctemp,"FFC",maxmin1);//保存FFC数据
 
         FFCUtil.saveIntFfc(Ffctemp);//保存校准图
 /*显示校准图：*/
         final Bitmap bitmaps;
-        //每个点加10显示
+        //每个点加10000显示
         for(int i=0;i<Ffctemp.length;i++){
             Ffctemp[i]=Ffctemp[i]+10000;
         }
@@ -536,12 +545,15 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
             compareTemps[i]=NowTemps[i]-beforeTemps[i];
         }
 
-        SaveTemps.saveIntTemps(compareTemps,"Compare");//保存比较后的数据
+
 
         bitmap= TempUtil.CovertToBitMap(compareTemps,0,100);
         int maxmin[]= TempUtil.MaxMinTemp(compareTemps);//找出最大最小值
         final int max=maxmin[0];
         final int min=maxmin[1];
+
+        SaveTemps.saveIntTemps(compareTemps,"Compare",maxmin);//保存比较后的数据
+
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -613,26 +625,48 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
        }
    }
 
+
+
    /**
     * 根据
     * mDev.getTemperatureData(temps,false,false);
     * 获得原始图片
     * */
+    public Paint SavePhotoPaint;
     private int[] Origin() {//获得原始图片
-        mDev.lock();
         int[] temps = new int[160*120];
-        mDev.getTemperatureData(temps,true,true);
+        mDev.lock();
+        mDev.getTemperatureData(temps,false,false);
         mDev.unlock();
+
+
         final Bitmap bitmap;
         Compare(temps);//与上一张进行比较
         beforeTemps=temps;//缓存上一张。
 
-        SaveTemps.saveIntTemps(temps,"Origin");//保存原始数据
+
 
         bitmap= TempUtil.CovertToBitMap(temps,0,100);
         int maxmin[]= TempUtil.MaxMinTemp(temps);//找出最大最小值
         final int max=maxmin[0];
         final int min=maxmin[1];
+        final int avg=maxmin[2];
+
+        int []showTemps=temps;
+
+        showTemps=TempUtil.ReLoad(showTemps);//旋转原始数据，x，y都旋转
+        final int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(showTemps,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
+
+        if(SavePhotoPaint==null){
+            SavePhotoPaint=new Paint();
+            SavePhotoPaint.setStyle(Paint.Style.FILL);
+            SavePhotoPaint.setStrokeWidth(1f);
+            SavePhotoPaint.setTextSize(10f);
+            SavePhotoPaint.setColor(Color.GREEN);
+            SavePhotoPaint.setStrokeCap(Paint.Cap.ROUND);
+        }
+        SaveTemps.saveIntTemps(temps,"Origin",maxmin);//保存原始数据
+
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -641,8 +675,33 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                 Paint paint = new Paint();
                 paint.setTextSize(15);
                 paint.setColor(Color.GREEN);
-                canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
-                canvas.drawText("Min: "+String.valueOf(min),20,40,paint);
+             /*   canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
+                canvas.drawText("Min: "+String.valueOf(min),20,40,paint);*/
+
+                float x2=maxTemp[1];
+                float y2=maxTemp[2];
+                float xStart=x2-4f;
+                float xStop=x2+4f;
+                float yStart=y2-4f;
+                float yStop=y2+4f;
+                canvas.drawLine(xStart, y2, xStop, y2, SavePhotoPaint);
+                canvas.drawLine(x2, yStart, x2, yStop, SavePhotoPaint);
+
+                Rect rt2 = new Rect();
+                Paint textPaint=SavePhotoPaint;
+                textPaint.getTextBounds(String.valueOf(max), 0, String.valueOf(max).length(), rt2);
+                int cx2 = rt2.width();
+                int cy2 = rt2.height();
+                final int pad2 = 6;
+                x2 += pad2;
+                y2 += cy2 + pad2;
+                if (x2 > 120-cx2) {
+                    x2 -= pad2 * 2 + cx2;
+                }
+                if (y2 >160) {
+                    y2 -= pad2 * 2 + cy2 * 2;
+                }
+                canvas.drawText(String.valueOf(max), x2, y2, textPaint);
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);

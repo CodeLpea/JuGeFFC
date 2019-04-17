@@ -13,15 +13,17 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import static cn.com.magnity.coresdksample.Util.TempUtil.m_FrameWidth;
+
 public class SaveTemps {
-    private static int m_FrameHeight=120;//高120
-    private static int m_FrameWidth=160;//宽度160
+  /*  private static int m_FrameHeight=120;//高120
+    private static int m_FrameWidth=160;//宽度160*/
     private static BufferedWriter bufferedWriter;
     private static   String pathTemps = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "Temp" + File.separator + "TempsSave.txt";
 
 
 
-    public static void saveIntTemps(int[] a,String tempName) {
+    public static void saveIntTemps(int[] a,String tempName,int MaxMinAvg[]) {
         File file1 = Environment.getExternalStorageDirectory();
         file1 = new File(file1, "Temp/");
         if (!file1.exists()) {
@@ -35,15 +37,19 @@ public class SaveTemps {
             bufferedWriter = new BufferedWriter(new FileWriter(pathTemps,true));
             switch (tempName){
                 case "Compare":
+                    bufferedWriter.write("\r\n"+"平均值："+MaxMinAvg[2]+"  最大值：  "+MaxMinAvg[0]+"  最小值：  "+MaxMinAvg[1]+"\r\n");
                     bufferedWriter.write("\r\n"+formatStr+" 与上一张的差  : "+"\r\n"+write+"\r\n");
                     break;
                 case "Origin":
+                    bufferedWriter.write("\r\n"+"平均值："+MaxMinAvg[2]+"  最大值：  "+MaxMinAvg[0]+"  最小值：  "+MaxMinAvg[1]+"\r\n");
                     bufferedWriter.write("\r\n"+formatStr+" 原始数据  : "+"\r\n"+write+"\r\n");
                     break;
                 case "FFC":
+                    bufferedWriter.write("\r\n"+"平均值："+MaxMinAvg[2]+"  最大值：  "+MaxMinAvg[0]+"  最小值：  "+MaxMinAvg[1]+"\r\n");
                     bufferedWriter.write("\r\n"+formatStr+" FFC数据  : "+"\r\n"+write+"\r\n");
                     break;
                 case "After":
+                    bufferedWriter.write("\r\n"+"平均值："+MaxMinAvg[2]+"  最大值：  "+MaxMinAvg[0]+"  最小值：  "+MaxMinAvg[1]+"\r\n");
                     bufferedWriter.write("\r\n"+formatStr+" FFC校准后的数据  : "+"\r\n"+write+"\r\n");
                     break;
             }

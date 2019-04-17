@@ -22,10 +22,16 @@ import java.util.concurrent.locks.ReentrantLock;
 import cn.com.magnity.coresdk.MagDevice;
 import cn.com.magnity.coresdk.types.CameraInfo;
 import cn.com.magnity.coresdk.types.StatisticInfo;
+import cn.com.magnity.coresdksample.Util.FFCUtil;
 import cn.com.magnity.coresdksample.Util.TempUtil;
+
+import static cn.com.magnity.coresdksample.MyApplication.FFCTemps;
+import static cn.com.magnity.coresdksample.Util.TempUtil.m_FrameHeight;
+import static cn.com.magnity.coresdksample.Util.TempUtil.m_FrameWidth;
 
 
 public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
+    private static final String TAG="MagSurfaceView";
     private volatile boolean mIsDrawing;
     private DrawThread mDrawThread;
 
@@ -139,7 +145,7 @@ public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void drawImage(Canvas canvas, Rect dstRect, CameraInfo cameraInfo,
                            StatisticInfo info, Paint paint) {
-        Bitmap bmp;
+      /*  Bitmap bmp;
 
 
         mDev.lock();
@@ -152,24 +158,49 @@ public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
             drawMaxTemp(canvas, dstRect, cameraInfo, info, paint);
             drawMinTemp(canvas, dstRect, cameraInfo, info, paint);
             // drawAnyTemp(canvas, dstRect, cameraInfo, info, paint);
-        }
+        }*/
 
-        //showTemperatureDataVideo(canvas,dstRect);//使用原始数据作为视频流
+        showTemperatureDataVideo(canvas, dstRect, cameraInfo, info, paint);//使用原始数据作为视频流
 
 
     }
 /**
  * 使用原始数据作为视频流
  * */
-    private void showTemperatureDataVideo(Canvas canvas, Rect dstRect) {
-             mDev.lock();
+    private void showTemperatureDataVideo(Canvas canvas, Rect dstRect, CameraInfo cameraInfo, StatisticInfo info, Paint paint) {
+        mDev.lock();
         int[] temps = new int[160*120];
-        mDev.getTemperatureData(temps,false,false);
+        mDev.getTemperatureData(temps,true,true);
         mDev.unlock();
+
+        if(FFCTemps==null){//如果没有缓存
+            Log.i(TAG, "读取本地FFC文件: ");
+            FFCTemps= FFCUtil.readFfc();//读取本地
+        }
+
+        int []AfterTemps=new int[temps.length];
+        if(FFCTemps.length>10){//本地读取到有效的FFC
+            for(int i=0;i<AfterTemps.length;i++){
+                AfterTemps[i]=temps[i]-FFCTemps[i];
+            } //将原始数据通过FFc数据处理
+
+        }else {//本地没有读取到有效的FFCTemps，就直接不做FFC处理，采用原始的temps
+           AfterTemps=temps;
+        }
+
+
         final Bitmap bitmap;
-        bitmap= TempUtil.CovertToBitMap(temps,0,100);
+        bitmap= TempUtil.CovertToBitMap(AfterTemps,0,100);
+
         Bitmap bitmap1=bitmap.copy(Bitmap.Config.ARGB_8888, true);
+
         canvas.drawBitmap(bitmap1, null, dstRect, null);
+
+
+        AfterTemps=TempUtil.ReLoad(AfterTemps);//旋转原始数据，x，y都旋转
+        int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(AfterTemps,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
+
+        drawMaxTemp(canvas, dstRect, cameraInfo, maxTemp, paint);
     }
 
     /**
@@ -191,18 +222,32 @@ public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     private void drawMaxTemp(Canvas canvas, Rect dstRect, CameraInfo cameraInfo,
-                             StatisticInfo info, Paint paint) {
-        int temp = info.maxTemperature;
+                             int info[], Paint paint) {
+
 
 
         //get the fpa coordinate
+       /* int temp=info.maxTemperature;
         int yFPA = info.maxPos / cameraInfo.fpaWidth;
-        int xFPA = info.maxPos - yFPA * cameraInfo.fpaWidth;
+        int xFPA = info.maxPos - yFPA * cameraInfo.fpaWidth;*/
+
+        int temp =info[0];
+        int yFPA =info[2];
+        int xFPA =info[1];
+
+   /*     Log.i(TAG, "原始info[2]Y: "+info[2]);
+        Log.i(TAG, "原始info[1]X: "+info[1]);*/
+
+     /*   Log.i(TAG, "处理后xFPA: "+xFPA);
+        Log.i(TAG, "处理后yFPA: "+yFPA);*/
 
 
         //convert to the screen coordinate
         int x = xFPA * dstRect.width() / cameraInfo.fpaWidth + dstRect.left;
-        int y = dstRect.height() - yFPA * dstRect.height() / cameraInfo.fpaHeight + dstRect.top;
+        int y = /*dstRect.height() -*/ yFPA * dstRect.height() / cameraInfo.fpaHeight + dstRect.top;
+/*
+        Log.i(TAG, "显示的 x: "+x);
+        Log.i(TAG,  "显示的 y: "+y);*/
 
         /* text to show */
         String s = String.format(Locale.ENGLISH, "%.1fC", temp * 0.001f);
