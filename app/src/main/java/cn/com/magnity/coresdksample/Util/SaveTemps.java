@@ -23,7 +23,11 @@ public class SaveTemps {
 
 
 
-    public static void saveIntTemps(int[] a,String tempName,int MaxMinAvg[]) {
+    public static void saveIntTemps(int[] a,String tempName,int MaxMinAvg[],boolean isOpenTree) {
+        String staus="正常一帧：";
+        if(isOpenTree){
+            staus="三帧测试：";
+        }
         File file1 = Environment.getExternalStorageDirectory();
         file1 = new File(file1, "Temp/");
         if (!file1.exists()) {
@@ -38,19 +42,19 @@ public class SaveTemps {
             switch (tempName){
                 case "Compare":
                     bufferedWriter.write("\r\n"+"平均值："+MaxMinAvg[2]+"  最大值：  "+MaxMinAvg[0]+"  最小值：  "+MaxMinAvg[1]+"\r\n");
-                    bufferedWriter.write("\r\n"+formatStr+" 与上一张的差  : "+"\r\n"+write+"\r\n");
+                    bufferedWriter.write("\r\n"+formatStr+staus+" 与上一张的差  : "+"\r\n"+write+"\r\n");
                     break;
                 case "Origin":
                     bufferedWriter.write("\r\n"+"平均值："+MaxMinAvg[2]+"  最大值：  "+MaxMinAvg[0]+"  最小值：  "+MaxMinAvg[1]+"\r\n");
-                    bufferedWriter.write("\r\n"+formatStr+" 原始数据  : "+"\r\n"+write+"\r\n");
+                    bufferedWriter.write("\r\n"+formatStr+staus+" 原始数据  : "+"\r\n"+write+"\r\n");
                     break;
                 case "FFC":
                     bufferedWriter.write("\r\n"+"平均值："+MaxMinAvg[2]+"  最大值：  "+MaxMinAvg[0]+"  最小值：  "+MaxMinAvg[1]+"\r\n");
-                    bufferedWriter.write("\r\n"+formatStr+" FFC数据  : "+"\r\n"+write+"\r\n");
+                    bufferedWriter.write("\r\n"+formatStr+staus+" FFC数据  : "+"\r\n"+write+"\r\n");
                     break;
                 case "After":
                     bufferedWriter.write("\r\n"+"平均值："+MaxMinAvg[2]+"  最大值：  "+MaxMinAvg[0]+"  最小值：  "+MaxMinAvg[1]+"\r\n");
-                    bufferedWriter.write("\r\n"+formatStr+" FFC校准后的数据  : "+"\r\n"+write+"\r\n");
+                    bufferedWriter.write("\r\n"+formatStr+staus+" FFC校准后的数据  : "+"\r\n"+write+"\r\n");
                     break;
             }
             bufferedWriter.close();

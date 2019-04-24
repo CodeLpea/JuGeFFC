@@ -28,7 +28,7 @@ public class TempUtil {
 
         Bitmap bmp = null;
         //找到数组中的最大值和最小值
-        int l_data_max = 33000;
+        int l_data_max = 40000;
         int l_data_min = 0;
         // Log.i(TAG, "l_data_max : " + (int)l_data_max + " l_data_min : " + (int)l_data_min);
         //根据红外照片值换算成对应的颜色值
@@ -144,31 +144,31 @@ public class TempUtil {
  * */
     public static int[] DDNgetRectTemperatureInfo(int[] temps,int x0,int x1,int y0,int y1){
 
-        int [] Maxresult=new int[3];
-
-
+        int [] Maxresult=new int[6];
 
         int[][]b=new int[m_FrameWidth][m_FrameHeight];
         for(int i=0;i<temps.length;i++){
             b[i%m_FrameWidth][i/m_FrameWidth]=temps[i];//将一维数组转换为2维数组，坐标原点为（0，0）
         }
-
+        Maxresult[3]=50000;
         for (int i = x0; i < x1; i++) {
             for (int k= y0; k < y1; k++) {
                 if (Maxresult[0] < b[i][k]) {
                     Maxresult[0] = b[i][k];//算出最大值
                     Maxresult[1]=i;//最大值的位置x
                     Maxresult[2]=k;//最大值的位置y
+                }
+                if (Maxresult[3] > b[i][k]&&b[i][k]>0) {
+                    Maxresult[3] = b[i][k];//算出最小值
+                    Maxresult[4] = i;//算出最小值的位置x
+                    Maxresult[5] = k;//算出最小值的位置y
 
                 }
 
             }
 
         }
-      /*  Log.i(TAG, "\nMaxresult[1] XXXXXXXXX：         "+Maxresult[1]); // 输出X值
-        Log.i(TAG, "Maxresult[2]=i YYYYYYYYY：         "+Maxresult[2]); // 输出Y值
-        Log.i(TAG, "Maxresult[0]=i MMMMMMMMM：         "+Maxresult[0]); // 输出值
-*/
+
         return Maxresult;
     }
 
@@ -189,43 +189,27 @@ public class TempUtil {
         return maxAvg;
     }
 
+    /**
+     * 获取任意位置的温度
+     * */
+    public static int[] DDNgetAnyTemperatureInfo(int[] temps,int x,int y){
 
+        int []anyTemp=new int[3];
 
-    /* *//**
-     * 根据原始温度temps
-     * 获取指定区域的最高温度
-     * x:0-160 m_FrameWidth
-     * y:0-120 m_FrameHeight
-     * *//*
-    public static int[] DDNgetRectTemperatureInfo(int[] temps,int x0,int x1,int y0,int y1){
-        int j=0;
         int[][]b=new int[m_FrameWidth][m_FrameHeight];
         for(int i=0;i<temps.length;i++){
-            if(i%m_FrameHeight==0&&i!=0){
-                j=j+1;
-            }
-            b[j][i%m_FrameHeight]=temps[i];//将一维数组转换为2维数组，坐标原点为（0，0）
+            b[i%m_FrameWidth][i/m_FrameWidth]=temps[i];//将一维数组转换为2维数组，坐标原点为（0，0）
         }
+        anyTemp[0]=b[x][y];
+        anyTemp[1]=x;
+        anyTemp[2]=y;
 
-        int [] Maxresult=new int[3];
-        int max = 0;
-        int min = b[0][0];
-        for (int i = x0; i < x1; i++) {
-            for (int k= y0; k < y1; k++) {
-                if (Maxresult[0] < b[i][k]) {
-                    Maxresult[0] = b[i][k];//算出最大值
-                    Maxresult[1]=i;//最大值的位置x
-                    Maxresult[2]=k;//最大值的位置y
+      /*  Log.i(TAG, "\nMaxresult[1] XXXXXXXXX：         "+Maxresult[1]); // 输出X值
+        Log.i(TAG, "Maxresult[2]=i YYYYYYYYY：         "+Maxresult[2]); // 输出Y值
+        Log.i(TAG, "Maxresult[0]=i MMMMMMMMM：         "+Maxresult[0]); // 输出值
+*/
+        return anyTemp;
+    }
 
-                }
-               *//* if (min > b[i][k]) {
-                    min = b[i][k];//算出最小值
-                }*//*
-            }
-        }
-       *//* Log.i(TAG, "\nDDNgetRectTemperatureInfo最大值是：  "+max); // 输出最大值
-        Log.i(TAG, "DDNgetRectTemperatureInfo最小值是：    "+min); // 输出最小值*//*
-        return Maxresult;
-    }*/
 
 }

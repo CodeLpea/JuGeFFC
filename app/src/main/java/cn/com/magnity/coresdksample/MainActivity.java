@@ -13,10 +13,14 @@ import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -36,6 +40,7 @@ import cn.com.magnity.coresdksample.Util.SaveTemps;
 import cn.com.magnity.coresdksample.Util.TempUtil;
 
 import static cn.com.magnity.coresdksample.MyApplication.FFCTemps;
+import static cn.com.magnity.coresdksample.MyApplication.locationAny;
 import static cn.com.magnity.coresdksample.Util.FFCUtil.getFFC;
 import static cn.com.magnity.coresdksample.Util.TempUtil.m_FrameHeight;
 import static cn.com.magnity.coresdksample.Util.TempUtil.m_FrameWidth;
@@ -74,11 +79,12 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
     private VideoFragment mVideoFragment;
 
     private ImageView iv_origin,iv_FFC,iv_after, iv_compare;
-    private TextView tv_origin,tv_FFC,tv_after,tv_current;
-
+    private TextView tv_max, tv_min, tv_any;
+    private CheckBox cb_tree;
 
 
     private int mDegree;//0 - 90, 1 - 180, 2 - 270
+    private boolean isOpenTreeTest=false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,6 +97,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         initUi();
 
         initMyUi();
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);//设置全屏
 
     }
 
@@ -100,14 +107,26 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         iv_after= (ImageView) findViewById(R.id.iv_after);
         iv_compare = (ImageView) findViewById(R.id.iv_Compare);
 
-        tv_origin=(TextView)findViewById(R.id.tv_origin);
-        tv_FFC=(TextView)findViewById(R.id.tv_FFC);
-        tv_after=(TextView)findViewById(R.id.tv_after);
-        tv_current=(TextView)findViewById(R.id.tv_current);
+        tv_max =(TextView)findViewById(R.id.tv_maxTemp);
+        tv_min =(TextView)findViewById(R.id.tv_minTemp);
+        tv_any =(TextView)findViewById(R.id.tv_anyTemp);
+        cb_tree=(CheckBox)findViewById(R.id.ch_TreeOpen);
+        cb_tree.setChecked(false);//设置默认关
+        cb_tree.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked){//打开的话
+                    isOpenTreeTest=true;
+                }else {
+                    isOpenTreeTest=false;
+                }
+            }
+        });
 
 
 
     }
+
 
     private void initTemp(Bundle savedInstanceState) {
 
@@ -458,7 +477,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         final int max=maxmin[0];
         final int min=maxmin[1];
         final int avg=maxmin[2];
-        SaveTemps.saveIntTemps(AfterTemps,"After",maxmin);//保存FFC校准后的数据
+        SaveTemps.saveIntTemps(AfterTemps,"After",maxmin,isOpenTreeTest);//保存FFC校准后的数据
 
         runOnUiThread(new Runnable() {
             @Override
@@ -498,7 +517,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         FFCTemps=Ffctemp;
 
         int maxmin1[]= TempUtil.MaxMinTemp(Ffctemp);//找出最大最小值
-        SaveTemps.saveIntTemps(Ffctemp,"FFC",maxmin1);//保存FFC数据
+        SaveTemps.saveIntTemps(Ffctemp,"FFC",maxmin1,isOpenTreeTest);//保存FFC数据
 
         FFCUtil.saveIntFfc(Ffctemp);//保存校准图
 /*显示校准图：*/
@@ -552,7 +571,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         final int max=maxmin[0];
         final int min=maxmin[1];
 
-        SaveTemps.saveIntTemps(compareTemps,"Compare",maxmin);//保存比较后的数据
+        SaveTemps.saveIntTemps(compareTemps,"Compare",maxmin,isOpenTreeTest);//保存比较后的数据
 
         runOnUiThread(new Runnable() {
             @Override
@@ -635,11 +654,31 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
     public Paint SavePhotoPaint;
     private int[] Origin() {//获得原始图片
         int[] temps = new int[160*120];
-        mDev.lock();
-        mDev.getTemperatureData(temps,false,false);
-        mDev.unlock();
+        int[] temp1 = new int[160*120];
+        int[] temp2 = new int[160*120];
+        int[] temp3 = new int[160*120];
+        if(isOpenTreeTest){
+            mDev.lock();
+            mDev.getTemperatureData(temp1,false,false);
+            mDev.unlock();
 
+            mDev.lock();
+            mDev.getTemperatureData(temp2,false,false);
+            mDev.unlock();
 
+            mDev.lock();
+            mDev.getTemperatureData(temp3,false,false);
+            mDev.unlock();
+
+            for(int i=0;i<temps.length;i++){
+                temps[i]=(temp1[i]+temp2[i]+temp3[i])/3;
+            }
+
+        }else {
+            mDev.lock();
+            mDev.getTemperatureData(temps,false,false);
+            mDev.unlock();
+        }
         final Bitmap bitmap;
         Compare(temps);//与上一张进行比较
         beforeTemps=temps;//缓存上一张。
@@ -665,7 +704,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
             SavePhotoPaint.setColor(Color.GREEN);
             SavePhotoPaint.setStrokeCap(Paint.Cap.ROUND);
         }
-        SaveTemps.saveIntTemps(temps,"Origin",maxmin);//保存原始数据
+        SaveTemps.saveIntTemps(temps,"Origin",maxmin,isOpenTreeTest);//保存原始数据
 
         runOnUiThread(new Runnable() {
             @Override

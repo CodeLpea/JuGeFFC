@@ -6,9 +6,11 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PaintFlagsDrawFilter;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
@@ -26,6 +28,7 @@ import cn.com.magnity.coresdksample.Util.FFCUtil;
 import cn.com.magnity.coresdksample.Util.TempUtil;
 
 import static cn.com.magnity.coresdksample.MyApplication.FFCTemps;
+import static cn.com.magnity.coresdksample.MyApplication.locationAny;
 import static cn.com.magnity.coresdksample.Util.TempUtil.m_FrameHeight;
 import static cn.com.magnity.coresdksample.Util.TempUtil.m_FrameWidth;
 
@@ -54,16 +57,33 @@ public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
         super(context, attrs);
         getHolder().addCallback(this);
     }
+    @Override
+    public boolean onTouchEvent(final MotionEvent event) {
+        switch (event.getAction()){
+            case MotionEvent.ACTION_DOWN:
+                float x=event.getX()/getWidth();
+                float y=event.getY()/getHeight();
+                float xx=x*160;
+                float YY=y*120;
+                locationAny[0]= (int)xx;
+                locationAny[1]= (int)YY;
+                break;
+        }
+        return super.onTouchEvent(event);
+
+    }
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
 
         mPaint = new Paint();
         mPaint.setStyle(Paint.Style.FILL);
-        mPaint.setStrokeWidth(6);
-        mPaint.setTextSize(50);
+        mPaint.setStrokeWidth(3);
+        mPaint.setTextSize(20);
         mPaint.setColor(Color.GREEN);
         mPaint.setStrokeCap(Paint.Cap.ROUND);
+
+        locationAny=new int[2];
 
         /* bilinear */
         mPfd = new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -174,10 +194,9 @@ public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
         mDev.unlock();
 
         if(FFCTemps==null){//如果没有缓存
-            Log.i(TAG, "读取本地FFC文件: ");
+            Log.i(TAG, "读取到本地FFC文件: ");
             FFCTemps= FFCUtil.readFfc();//读取本地
         }
-
         int []AfterTemps=new int[temps.length];
         if(FFCTemps.length>10){//本地读取到有效的FFC
             for(int i=0;i<AfterTemps.length;i++){
@@ -186,6 +205,7 @@ public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
 
         }else {//本地没有读取到有效的FFCTemps，就直接不做FFC处理，采用原始的temps
            AfterTemps=temps;
+            Log.i(TAG, "本地没有FFC数据");
         }
 
 
@@ -199,24 +219,71 @@ public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
 
         AfterTemps=TempUtil.ReLoad(AfterTemps);//旋转原始数据，x，y都旋转
         int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(AfterTemps,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
+        int []anyTemp=TempUtil.DDNgetAnyTemperatureInfo(AfterTemps,locationAny[0],locationAny[1]);//获取指定矩形区域中最大的值
 
         drawMaxTemp(canvas, dstRect, cameraInfo, maxTemp, paint);
+        drawAnyTemp(canvas, dstRect, cameraInfo, anyTemp, paint);
     }
 
     /**
  * 获取任意位置的温度
  * */
-    private void drawAnyTemp(Canvas canvas, Rect dstRect, CameraInfo cameraInfo, StatisticInfo info, Paint paint) {
-        int [] infos=new int[5];
-        int [] infos2=new int[5];
-        /*boolean result=mDev.getRectTemperatureInfo(10,10,50,50,infos);*/
-        int result=mDev.getTemperatureProbe(50,50,1);
-        Log.i("drawAnyTemp result", String.valueOf(result));
-      //  Log.i("drawAnyTemp MaxTemp: ", String.valueOf(infos[1]));
-       /* boolean result2=mDev.getRectTemperatureInfo(60,60,100,100,infos2);*/
-        int result2=mDev.getTemperatureProbe(100,100,1);
-        Log.i("drawAnyTemp result2", String.valueOf(result2));
-        //Log.i("drawAnyTemp MaxTemp2: ", String.valueOf(infos[1]));
+    private void drawAnyTemp(Canvas canvas, Rect dstRect, CameraInfo cameraInfo, int []info, Paint paint) {
+
+        int temp =info[0];
+        int yFPA =info[2];
+        int xFPA =info[1];
+        Paint paint2=paint;
+        paint2.setColor(Color.BLUE);
+
+
+   /*     Log.i(TAG, "原始info[2]Y: "+info[2]);
+        Log.i(TAG, "原始info[1]X: "+info[1]);*/
+
+     /*   Log.i(TAG, "处理后xFPA: "+xFPA);
+        Log.i(TAG, "处理后yFPA: "+yFPA);*/
+
+
+        //convert to the screen coordinate
+        int x = xFPA * dstRect.width() / cameraInfo.fpaWidth + dstRect.left;
+        int y = /*dstRect.height() -*/ yFPA * dstRect.height() / cameraInfo.fpaHeight + dstRect.top;
+
+/*
+        Log.i(TAG, "显示的 x: "+x);
+        Log.i(TAG,  "显示的 y: "+y);*/
+
+        /* text to show */
+        String s = String.format(Locale.ENGLISH, "%.1fC", temp * 0.001f);
+
+
+
+
+        /* FIXME: allocate new object in high frequently running function */
+        Rect rt = new Rect();
+        mPaint.getTextBounds(s, 0, s.length(), rt);
+
+        final int pad = 10;
+        final int lineWidth = 8;
+        int cx = rt.width();
+        int cy = rt.height();
+
+        /* draw cross for max temp point */
+        canvas.drawLine(x - lineWidth, y, x + lineWidth, y, paint2);
+        canvas.drawLine(x, y - lineWidth, x, y + lineWidth, paint2);
+
+        /* draw text */
+        x += pad;
+        y += cy + pad;
+        if (x > dstRect.width() - cx) {
+            x -= pad * 2 + cx;
+        }
+        if (y > dstRect.height()) {
+            y -= pad * 2 + cy * 2;
+        }
+
+
+
+        canvas.drawText(s, x, y, paint2);
 
 
     }
@@ -235,6 +302,20 @@ public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
         int yFPA =info[2];
         int xFPA =info[1];
 
+        int mintemp =info[3];
+        int minyFPA =info[5];
+        int minxFPA =info[4];
+
+        Paint paintMin=paint;
+        paintMin.setColor(Color.GREEN);
+
+        Paint  paintMax = new Paint();
+        paintMax.setStyle(Paint.Style.FILL);
+        paintMax.setStrokeWidth(3);
+        paintMax.setTextSize(20);
+        paintMax.setColor(Color.RED);
+        paintMax.setStrokeCap(Paint.Cap.ROUND);
+
    /*     Log.i(TAG, "原始info[2]Y: "+info[2]);
         Log.i(TAG, "原始info[1]X: "+info[1]);*/
 
@@ -245,26 +326,43 @@ public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
         //convert to the screen coordinate
         int x = xFPA * dstRect.width() / cameraInfo.fpaWidth + dstRect.left;
         int y = /*dstRect.height() -*/ yFPA * dstRect.height() / cameraInfo.fpaHeight + dstRect.top;
+        int minx = minxFPA * dstRect.width() / cameraInfo.fpaWidth + dstRect.left;
+        int miny = /*dstRect.height() -*/ minyFPA * dstRect.height() / cameraInfo.fpaHeight + dstRect.top;
 /*
         Log.i(TAG, "显示的 x: "+x);
         Log.i(TAG,  "显示的 y: "+y);*/
 
         /* text to show */
         String s = String.format(Locale.ENGLISH, "%.1fC", temp * 0.001f);
+        String mins = String.format(Locale.ENGLISH, "%.1fC", mintemp * 0.001f);
+
 
 
         /* FIXME: allocate new object in high frequently running function */
         Rect rt = new Rect();
         mPaint.getTextBounds(s, 0, s.length(), rt);
 
+        Rect minrt = new Rect();
+        mPaint.getTextBounds(mins, 0, mins.length(), minrt);
+
+
+
         final int pad = 10;
         final int lineWidth = 8;
         int cx = rt.width();
         int cy = rt.height();
 
+        int mincx = minrt.width();
+        int mincy = minrt.height();
+
         /* draw cross for max temp point */
-        canvas.drawLine(x - lineWidth, y, x + lineWidth, y, paint);
-        canvas.drawLine(x, y - lineWidth, x, y + lineWidth, paint);
+        canvas.drawLine(x - lineWidth, y, x + lineWidth, y, paintMax);
+        canvas.drawLine(x, y - lineWidth, x, y + lineWidth, paintMax);
+
+
+        canvas.drawLine(minx - lineWidth, miny, minx + lineWidth, miny, paintMin);
+        canvas.drawLine(minx, miny - lineWidth, minx, miny + lineWidth, paintMin);
+
 
 
         /* draw text */
@@ -276,7 +374,19 @@ public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
         if (y > dstRect.height()) {
             y -= pad * 2 + cy * 2;
         }
-        canvas.drawText(s, x, y, paint);
+
+        /* draw text */
+        minx += pad;
+        miny += mincy + pad;
+        if (minx > dstRect.width() - mincx) {
+            minx -= pad * 2 + mincx;
+        }
+        if (miny > dstRect.height()) {
+            miny -= pad * 2 + mincy * 2;
+        }
+
+        canvas.drawText("max:"+s, x, y, paintMax);
+        canvas.drawText("min:"+mins, minx, miny, paintMin);
 
 
     }

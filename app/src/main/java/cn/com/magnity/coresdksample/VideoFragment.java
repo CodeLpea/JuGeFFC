@@ -2,11 +2,15 @@ package cn.com.magnity.coresdksample;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
 import cn.com.magnity.coresdk.MagDevice;
+
+import static cn.com.magnity.coresdksample.MyApplication.locationAny;
 
 public class VideoFragment extends Fragment implements MagDevice.INewFrameCallback {
     private MagSurfaceView mView;
@@ -39,4 +43,6 @@ public class VideoFragment extends Fragment implements MagDevice.INewFrameCallba
             mView.stopDrawingThread();
         }
     }
+
+
 }
