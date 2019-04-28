@@ -13,7 +13,6 @@ import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.AdapterView;
@@ -477,7 +476,13 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         final int max=maxmin[0];
         final int min=maxmin[1];
         final int avg=maxmin[2];
+
+
         SaveTemps.saveIntTemps(AfterTemps,"After",maxmin,isOpenTreeTest);//保存FFC校准后的数据
+
+        AfterTemps=TempUtil.ReLoad(AfterTemps);//旋转原始数据，x，y都旋转
+        final int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(AfterTemps,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
+        final  int []anyTemp=TempUtil.DDNgetAnyTemperatureInfo(AfterTemps,locationAny[0],locationAny[1]);//获取指定矩形区域中任意的值
 
         runOnUiThread(new Runnable() {
             @Override
@@ -487,8 +492,12 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                 Paint paint = new Paint();
                 paint.setTextSize(15);
                 paint.setColor(Color.GREEN);
-                canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
-                canvas.drawText("Min: "+String.valueOf(min),20,40,paint);
+              /*  canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
+                canvas.drawText("Min: "+String.valueOf(min),20,40,paint);*/
+                /*绘制温度显示十字架*/
+                DrawTemp(canvas,maxTemp[0],maxTemp[1],maxTemp[2],"max");
+                DrawTemp(canvas,maxTemp[3],maxTemp[4],maxTemp[5],"min");
+                DrawTemp(canvas,anyTemp[0],anyTemp[1],anyTemp[2],"point");
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
@@ -531,6 +540,9 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         int maxmin[]= TempUtil.MaxMinTemp(Ffctemp);//找出最大最小值
         final int max=maxmin[0];
         final int min=maxmin[1];
+        Ffctemp=TempUtil.ReLoad(Ffctemp);//旋转原始数据，x，y都旋转
+        final int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(Ffctemp,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
+        final  int []anyTemp=TempUtil.DDNgetAnyTemperatureInfo(Ffctemp,locationAny[0],locationAny[1]);//获取指定矩形区域中任意的值
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -540,8 +552,13 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                 Paint paint = new Paint();
                 paint.setTextSize(15);
                 paint.setColor(Color.GREEN);
-                canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
-                canvas.drawText("Min: "+String.valueOf(min),20,40,paint);
+             /*   canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
+                canvas.drawText("Min: "+String.valueOf(min),20,40,paint);*/
+
+                /*绘制温度显示十字架*/
+                DrawTemp(canvas,maxTemp[0],maxTemp[1],maxTemp[2],"max");
+                DrawTemp(canvas,maxTemp[3],maxTemp[4],maxTemp[5],"min");
+                DrawTemp(canvas,anyTemp[0],anyTemp[1],anyTemp[2],"point");
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
@@ -571,6 +588,9 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         final int max=maxmin[0];
         final int min=maxmin[1];
 
+        final int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(compareTemps,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
+        final  int []anyTemp=TempUtil.DDNgetAnyTemperatureInfo(compareTemps,locationAny[0],locationAny[1]);//获取指定矩形区域中任意的值
+
         SaveTemps.saveIntTemps(compareTemps,"Compare",maxmin,isOpenTreeTest);//保存比较后的数据
 
         runOnUiThread(new Runnable() {
@@ -581,8 +601,12 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                 Paint paint = new Paint();
                 paint.setTextSize(15);
                 paint.setColor(Color.GREEN);
-                canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
-                canvas.drawText("Min: "+String.valueOf(min),20,40,paint);
+              /*  canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
+                canvas.drawText("Min: "+String.valueOf(min),20,40,paint);*/
+                /*绘制温度显示十字架*/
+                DrawTemp(canvas,maxTemp[0],maxTemp[1],maxTemp[2],"max");
+                DrawTemp(canvas,maxTemp[3],maxTemp[4],maxTemp[5],"min");
+                DrawTemp(canvas,anyTemp[0],anyTemp[1],anyTemp[2],"point");
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
@@ -654,6 +678,110 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
     public Paint SavePhotoPaint;
     private int[] Origin() {//获得原始图片
         int[] temps = new int[160*120];
+        temps= TreeTest(isOpenTreeTest);//进行三帧处理
+
+
+        final Bitmap bitmap;
+        Compare(temps);//与上一张进行比较
+        beforeTemps=temps;//缓存上一张。
+        bitmap= TempUtil.CovertToBitMap(temps,0,100);
+        int maxmin[]= TempUtil.MaxMinTemp(temps);//找出最大最小值
+        final int max=maxmin[0];
+        final int min=maxmin[1];
+        final int avg=maxmin[2];
+
+        int []showTemps=temps;
+
+        showTemps=TempUtil.ReLoad(showTemps);//旋转原始数据，x，y都旋转
+
+        final int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(showTemps,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
+        final  int []anyTemp=TempUtil.DDNgetAnyTemperatureInfo(showTemps,locationAny[0],locationAny[1]);//获取指定矩形区域中任意的值
+        if(SavePhotoPaint==null){
+            SavePhotoPaint=new Paint();
+            SavePhotoPaint.setStyle(Paint.Style.FILL);
+            SavePhotoPaint.setStrokeWidth(1f);
+            SavePhotoPaint.setTextSize(10f);
+            SavePhotoPaint.setColor(Color.GREEN);
+            SavePhotoPaint.setStrokeCap(Paint.Cap.ROUND);
+        }
+        SaveTemps.saveIntTemps(temps,"Origin",maxmin,isOpenTreeTest);//保存原始数据
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Bitmap bitmap1=bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                Canvas canvas = new Canvas(bitmap1);
+                Paint paint = new Paint();
+                paint.setTextSize(15);
+                paint.setColor(Color.GREEN);
+             /*   canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
+                canvas.drawText("Min: "+String.valueOf(min),20,40,paint);*/
+
+
+                /*绘制温度显示十字架*/
+                DrawTemp(canvas,maxTemp[0],maxTemp[1],maxTemp[2],"max");
+                DrawTemp(canvas,maxTemp[3],maxTemp[4],maxTemp[5],"min");
+                DrawTemp(canvas,anyTemp[0],anyTemp[1],anyTemp[2],"point");
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
+                byte[] bytes=baos.toByteArray();
+                Glide.with(MainActivity.this).load(bytes).into(iv_origin);
+            }
+        });
+        return temps;
+    }
+/**
+ * 绘制
+ * */
+    private void DrawTemp(Canvas canvas, int temp, int x, int y, String model) {
+
+        switch (model){
+            case "max":
+                SavePhotoPaint.setColor(Color.RED);
+                model="Max: ";
+                break;
+            case"min":
+                SavePhotoPaint.setColor(Color.GREEN);
+                model="Min: ";
+                break;
+            case "point":
+                SavePhotoPaint.setColor(Color.BLUE);
+                model="Point: ";
+                break;
+        }
+
+        /*绘制最大的温度显示十字架*/
+        float xStart=x-4f;
+        float xStop=x+4f;
+        float yStart=y-4f;
+        float yStop=y+4f;
+        canvas.drawLine(xStart, y, xStop, y, SavePhotoPaint);
+        canvas.drawLine(x, yStart, x, yStop, SavePhotoPaint);
+
+
+        Rect rt2 = new Rect();
+        Paint textPaint=SavePhotoPaint;
+        String words=model+temp;
+        textPaint.getTextBounds(words, 0, words.length(), rt2);
+        int cx2 = rt2.width();
+        int cy2 = rt2.height();
+        final int pad2 = 6;
+        x += pad2;
+        y += cy2 + pad2;
+        if (x > m_FrameWidth-cx2) {
+            x -= pad2 * 2 + cx2;
+        }
+        if (y >m_FrameHeight) {
+            y -= pad2 * 2 + cy2 * 2;
+        }
+        canvas.drawText(words, x, y, textPaint);
+
+    }
+
+    private int[] TreeTest(boolean isOpenTreeTest) {
+
+        int[] temps = new int[160*120];
         int[] temp1 = new int[160*120];
         int[] temp2 = new int[160*120];
         int[] temp3 = new int[160*120];
@@ -679,75 +807,6 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
             mDev.getTemperatureData(temps,false,false);
             mDev.unlock();
         }
-        final Bitmap bitmap;
-        Compare(temps);//与上一张进行比较
-        beforeTemps=temps;//缓存上一张。
-
-
-
-        bitmap= TempUtil.CovertToBitMap(temps,0,100);
-        int maxmin[]= TempUtil.MaxMinTemp(temps);//找出最大最小值
-        final int max=maxmin[0];
-        final int min=maxmin[1];
-        final int avg=maxmin[2];
-
-        int []showTemps=temps;
-
-        showTemps=TempUtil.ReLoad(showTemps);//旋转原始数据，x，y都旋转
-        final int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(showTemps,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
-
-        if(SavePhotoPaint==null){
-            SavePhotoPaint=new Paint();
-            SavePhotoPaint.setStyle(Paint.Style.FILL);
-            SavePhotoPaint.setStrokeWidth(1f);
-            SavePhotoPaint.setTextSize(10f);
-            SavePhotoPaint.setColor(Color.GREEN);
-            SavePhotoPaint.setStrokeCap(Paint.Cap.ROUND);
-        }
-        SaveTemps.saveIntTemps(temps,"Origin",maxmin,isOpenTreeTest);//保存原始数据
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Bitmap bitmap1=bitmap.copy(Bitmap.Config.ARGB_8888, true);
-                Canvas canvas = new Canvas(bitmap1);
-                Paint paint = new Paint();
-                paint.setTextSize(15);
-                paint.setColor(Color.GREEN);
-             /*   canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
-                canvas.drawText("Min: "+String.valueOf(min),20,40,paint);*/
-
-                float x2=maxTemp[1];
-                float y2=maxTemp[2];
-                float xStart=x2-4f;
-                float xStop=x2+4f;
-                float yStart=y2-4f;
-                float yStop=y2+4f;
-                canvas.drawLine(xStart, y2, xStop, y2, SavePhotoPaint);
-                canvas.drawLine(x2, yStart, x2, yStop, SavePhotoPaint);
-
-                Rect rt2 = new Rect();
-                Paint textPaint=SavePhotoPaint;
-                textPaint.getTextBounds(String.valueOf(max), 0, String.valueOf(max).length(), rt2);
-                int cx2 = rt2.width();
-                int cy2 = rt2.height();
-                final int pad2 = 6;
-                x2 += pad2;
-                y2 += cy2 + pad2;
-                if (x2 > 120-cx2) {
-                    x2 -= pad2 * 2 + cx2;
-                }
-                if (y2 >160) {
-                    y2 -= pad2 * 2 + cy2 * 2;
-                }
-                canvas.drawText(String.valueOf(max), x2, y2, textPaint);
-
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
-                byte[] bytes=baos.toByteArray();
-                Glide.with(MainActivity.this).load(bytes).into(iv_origin);
-            }
-        });
         return temps;
     }
 }
