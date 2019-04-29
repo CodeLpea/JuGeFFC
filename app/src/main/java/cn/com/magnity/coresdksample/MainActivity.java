@@ -432,11 +432,16 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                 case R.id.btnafter:
                     int []Orgintemps=Origin();
                     //Current();
-                    int []readeFfc=FFCUtil.readFfc();
-
+                    int []readeFfc=new int[160*120];
+                    if(FFCTemps!=null){
+                        readeFfc=FFCTemps;
+                    }else {
+                         readeFfc=FFCUtil.readFfc();
+                    }
                     if(readeFfc.length<10){
                         Toast.makeText(MainActivity.this, "请先校准FFC", Toast.LENGTH_SHORT).show();
                     }else {
+
                       int []afterFfcTemps= AfterFfc(Orgintemps,readeFfc);//将原始数据通过FFc数据处理
                       int Orgintempsmaxmin[]= TempUtil.MaxMinTemp(Orgintemps);//找出原始数据的最大最小值
                       int afterFfcTempsmaxmin[]= TempUtil.MaxMinTemp(afterFfcTemps);//找出补偿后的最大最小值
@@ -521,6 +526,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
      * */
     private int[] FFC(int[] temps) {//从原始数据图中计算出FFC校准图
         int []Ffctemp;
+        int []showFfcTemp=new int[120*160];
         Ffctemp=getFFC(temps);//获得FFC的校准图
 
         FFCTemps=Ffctemp;
@@ -533,16 +539,17 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         final Bitmap bitmaps;
         //每个点加10000显示
         for(int i=0;i<Ffctemp.length;i++){
-            Ffctemp[i]=Ffctemp[i]+10000;
+            showFfcTemp[i]=Ffctemp[i]+10000;
         }
-        bitmaps= TempUtil.CovertToBitMap(Ffctemp,0,100000);
+        bitmaps= TempUtil.CovertToBitMap(showFfcTemp,0,100000);
 
         int maxmin[]= TempUtil.MaxMinTemp(Ffctemp);//找出最大最小值
         final int max=maxmin[0];
         final int min=maxmin[1];
-        Ffctemp=TempUtil.ReLoad(Ffctemp);//旋转原始数据，x，y都旋转
-        final int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(Ffctemp,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
-        final  int []anyTemp=TempUtil.DDNgetAnyTemperatureInfo(Ffctemp,locationAny[0],locationAny[1]);//获取指定矩形区域中任意的值
+
+        showFfcTemp=TempUtil.ReLoad(showFfcTemp);//旋转原始数据，x，y都旋转
+        final int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(showFfcTemp,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
+        final  int []anyTemp=TempUtil.DDNgetAnyTemperatureInfo(showFfcTemp,locationAny[0],locationAny[1]);//获取指定矩形区域中任意的值
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -574,7 +581,6 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
     private int[]beforeTemps;
     private void Compare(int NowTemps[]) {//获得当前原始数据与上一张原始数据的差图
         if(beforeTemps!=null){
-
         final Bitmap bitmap;
         int compareTemps[]=new int[beforeTemps.length];
         for(int i=0;i<beforeTemps.length;i++){
@@ -582,12 +588,12 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         }
 
 
-
         bitmap= TempUtil.CovertToBitMap(compareTemps,0,100);
         int maxmin[]= TempUtil.MaxMinTemp(compareTemps);//找出最大最小值
         final int max=maxmin[0];
         final int min=maxmin[1];
 
+        compareTemps=TempUtil.ReLoad(compareTemps);//旋转原始数据，x，y都旋转
         final int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(compareTemps,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
         final  int []anyTemp=TempUtil.DDNgetAnyTemperatureInfo(compareTemps,locationAny[0],locationAny[1]);//获取指定矩形区域中任意的值
 
@@ -787,15 +793,15 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         int[] temp3 = new int[160*120];
         if(isOpenTreeTest){
             mDev.lock();
-            mDev.getTemperatureData(temp1,false,false);
+            mDev.getTemperatureData(temp1,true,true);
             mDev.unlock();
 
             mDev.lock();
-            mDev.getTemperatureData(temp2,false,false);
+            mDev.getTemperatureData(temp2,true,true);
             mDev.unlock();
 
             mDev.lock();
-            mDev.getTemperatureData(temp3,false,false);
+            mDev.getTemperatureData(temp3,true,true);
             mDev.unlock();
 
             for(int i=0;i<temps.length;i++){
@@ -804,7 +810,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
 
         }else {
             mDev.lock();
-            mDev.getTemperatureData(temps,false,false);
+            mDev.getTemperatureData(temps,true,true);
             mDev.unlock();
         }
         return temps;

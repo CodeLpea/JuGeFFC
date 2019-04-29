@@ -192,12 +192,13 @@ public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
         int[] temps = new int[160*120];
         mDev.getTemperatureData(temps,true,true);
         mDev.unlock();
+        int []AfterTemps=new int[temps.length];
 
-        if(FFCTemps==null){//如果没有缓存
+        /*if(FFCTemps==null){//如果没有缓存
             Log.i(TAG, "读取到本地FFC文件: ");
             FFCTemps= FFCUtil.readFfc();//读取本地
         }
-        int []AfterTemps=new int[temps.length];
+
         if(FFCTemps.length>10){//本地读取到有效的FFC
             for(int i=0;i<AfterTemps.length;i++){
                 AfterTemps[i]=temps[i]-FFCTemps[i];
@@ -206,8 +207,8 @@ public class MagSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
         }else {//本地没有读取到有效的FFCTemps，就直接不做FFC处理，采用原始的temps
            AfterTemps=temps;
             Log.i(TAG, "本地没有FFC数据");
-        }
-
+        }*/
+        AfterTemps=temps;
 
         final Bitmap bitmap;
         bitmap= TempUtil.CovertToBitMap(AfterTemps,0,100);
