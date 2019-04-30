@@ -26,15 +26,17 @@ public class TempUtil {
 
         data=ReLoadX(data);
 
+        int maxmin[]= TempUtil.MaxMinTemp(data);//找出最大最小值
+
         Bitmap bmp = null;
         //找到数组中的最大值和最小值
-        int l_data_max = 40000;
-        int l_data_min = 0;
+        int l_data_max = maxmin[0];
+        int l_data_min = maxmin[1];
         // Log.i(TAG, "l_data_max : " + (int)l_data_max + " l_data_min : " + (int)l_data_min);
         //根据红外照片值换算成对应的颜色值
         int[] imageColors = new int[m_FrameHeight * m_FrameWidth];
         int diff = (int)(l_data_max - l_data_min + 1);
-        diff = ((diff < 256) ? 256 : diff);
+        //diff = ((diff < 256) ? 256 : diff);
         int colormap_size = ColorMap.colorTable.length;
         for (int imageRow = 0; imageRow < m_FrameHeight; ++imageRow)
         {
@@ -150,7 +152,7 @@ public class TempUtil {
         for(int i=0;i<temps.length;i++){
             b[i%m_FrameWidth][i/m_FrameWidth]=temps[i];//将一维数组转换为2维数组，坐标原点为（0，0）
         }
-        Maxresult[3]=50000;
+        Maxresult[3]=b[0][0];
         for (int i = x0; i < x1; i++) {
             for (int k= y0; k < y1; k++) {
                 if (Maxresult[0] < b[i][k]) {
@@ -158,7 +160,7 @@ public class TempUtil {
                     Maxresult[1]=i;//最大值的位置x
                     Maxresult[2]=k;//最大值的位置y
                 }
-                if (Maxresult[3] > b[i][k]&&b[i][k]>0) {
+                if (Maxresult[3] > b[i][k]&&b[i][k]!=0) {
                     Maxresult[3] = b[i][k];//算出最小值
                     Maxresult[4] = i;//算出最小值的位置x
                     Maxresult[5] = k;//算出最小值的位置y

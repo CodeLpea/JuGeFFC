@@ -149,12 +149,18 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                         updateDeviceList();
                         mEnumHandler.sendEmptyMessageDelayed(START_TIMER_ID, TIMER_INTERVAL);
                         break;
+                    case 999:
+                        mEnumHandler.removeMessages(999);
+                        Origin();
+                        mEnumHandler.sendEmptyMessageDelayed(999, 66);
+                        break;
                 }
             }
         };
 
         /* start timer */
         mEnumHandler.sendEmptyMessage(START_TIMER_ID);
+        mEnumHandler.sendEmptyMessage(999);
 
         /* runtime permit */
         Utils.requestRuntimePermission(this,
@@ -483,7 +489,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         final int avg=maxmin[2];
 
 
-        SaveTemps.saveIntTemps(AfterTemps,"After",maxmin,isOpenTreeTest);//保存FFC校准后的数据
+        //SaveTemps.saveIntTemps(AfterTemps,"After",maxmin,isOpenTreeTest);//保存FFC校准后的数据
 
         AfterTemps=TempUtil.ReLoad(AfterTemps);//旋转原始数据，x，y都旋转
         final int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(AfterTemps,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
@@ -579,48 +585,59 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
 
     }
     private int[]beforeTemps;
+
+    private int[]TCompare=new int[160*120];
+    private int[] showPoint=new int[160*120];
+    private int countCompare=0;
     private void Compare(int NowTemps[]) {//获得当前原始数据与上一张原始数据的差图
-        if(beforeTemps!=null){
-        final Bitmap bitmap;
-        int compareTemps[]=new int[beforeTemps.length];
-        for(int i=0;i<beforeTemps.length;i++){
-            compareTemps[i]=NowTemps[i]-beforeTemps[i];
-        }
-
-
-        bitmap= TempUtil.CovertToBitMap(compareTemps,0,100);
-        int maxmin[]= TempUtil.MaxMinTemp(compareTemps);//找出最大最小值
+        if(beforeTemps!=null) {
+            countCompare++;
+            final Bitmap bitmap;
+            int compareTemps[] = new int[beforeTemps.length];
+            for (int i = 0; i < beforeTemps.length; i++) {
+                compareTemps[i] = NowTemps[i] - beforeTemps[i];
+            }
+            for (int i = 0; i < beforeTemps.length; i++) {
+                TCompare[i] = Math.abs(compareTemps[i]) + TCompare[i];
+                showPoint[i] = TCompare[i] / countCompare;
+            }
+            if (countCompare % 10 == 0) {
+                bitmap = TempUtil.CovertToBitMap(TCompare, 0, 100);
+     /*   int maxmin[]= TempUtil.MaxMinTemp(compareTemps);//找出最大最小值
         final int max=maxmin[0];
-        final int min=maxmin[1];
+        final int min=maxmin[1];*/
 
-        compareTemps=TempUtil.ReLoad(compareTemps);//旋转原始数据，x，y都旋转
-        final int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(compareTemps,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
-        final  int []anyTemp=TempUtil.DDNgetAnyTemperatureInfo(compareTemps,locationAny[0],locationAny[1]);//获取指定矩形区域中任意的值
+                showPoint = TempUtil.ReLoad(showPoint);//旋转原始数据，x，y都旋转
+                final int[] maxTemp = TempUtil.DDNgetRectTemperatureInfo(showPoint, 0, m_FrameWidth, 0, m_FrameHeight);//获取指定矩形区域中最大的值
+                final int[] anyTemp = TempUtil.DDNgetAnyTemperatureInfo(showPoint, locationAny[0], locationAny[1]);//获取指定矩形区域中任意的值
 
-        SaveTemps.saveIntTemps(compareTemps,"Compare",maxmin,isOpenTreeTest);//保存比较后的数据
+                //SaveTemps.saveIntTemps(compareTemps,"Compare",maxmin,isOpenTreeTest);//保存比较后的数据
 
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Bitmap bitmap1=bitmap.copy(Bitmap.Config.ARGB_8888, true);
-                Canvas canvas = new Canvas(bitmap1);
-                Paint paint = new Paint();
-                paint.setTextSize(15);
-                paint.setColor(Color.GREEN);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Bitmap bitmap1 = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                        Canvas canvas = new Canvas(bitmap1);
+                        Paint paint = new Paint();
+                        paint.setTextSize(15);
+                        paint.setColor(Color.GREEN);
               /*  canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
                 canvas.drawText("Min: "+String.valueOf(min),20,40,paint);*/
-                /*绘制温度显示十字架*/
-                DrawTemp(canvas,maxTemp[0],maxTemp[1],maxTemp[2],"max");
-                DrawTemp(canvas,maxTemp[3],maxTemp[4],maxTemp[5],"min");
-                DrawTemp(canvas,anyTemp[0],anyTemp[1],anyTemp[2],"point");
+                        /*绘制温度显示十字架*/
 
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
-                byte[] bytes=baos.toByteArray();
-                Glide.with(MainActivity.this).load(bytes).into(iv_compare);
+                        DrawTemp(canvas, maxTemp[0], maxTemp[1], maxTemp[2], "max");
+                        DrawTemp(canvas, maxTemp[3], maxTemp[4], maxTemp[5], "min");
+                        DrawTemp(canvas, anyTemp[0], anyTemp[1], anyTemp[2], "point");
+
+
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
+                        byte[] bytes = baos.toByteArray();
+                        Glide.with(MainActivity.this).load(bytes).into(iv_compare);
+                    }
+                });
+
             }
-        });
-
         }
     }
 
@@ -683,60 +700,64 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
     * */
     public Paint SavePhotoPaint;
     private int[] Origin() {//获得原始图片
-        int[] temps = new int[160*120];
-        temps= TreeTest(isOpenTreeTest);//进行三帧处理
+        int[] temps = new int[160 * 120];
+        temps = TreeTest(isOpenTreeTest);//进行三帧处理
 
 
         final Bitmap bitmap;
         Compare(temps);//与上一张进行比较
-        beforeTemps=temps;//缓存上一张。
-        bitmap= TempUtil.CovertToBitMap(temps,0,100);
-        int maxmin[]= TempUtil.MaxMinTemp(temps);//找出最大最小值
-        final int max=maxmin[0];
-        final int min=maxmin[1];
-        final int avg=maxmin[2];
+        beforeTemps = temps;//缓存上一张。
+        if (countCompare % 10 == 0) {
+            bitmap = TempUtil.CovertToBitMap(temps, 0, 100);
+            int maxmin[] = TempUtil.MaxMinTemp(temps);//找出最大最小值
+            final int max = maxmin[0];
+            final int min = maxmin[1];
+            final int avg = maxmin[2];
 
-        int []showTemps=temps;
+            int[] showTemps = temps;
 
-        showTemps=TempUtil.ReLoad(showTemps);//旋转原始数据，x，y都旋转
+            showTemps = TempUtil.ReLoad(showTemps);//旋转原始数据，x，y都旋转
 
-        final int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(showTemps,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
-        final  int []anyTemp=TempUtil.DDNgetAnyTemperatureInfo(showTemps,locationAny[0],locationAny[1]);//获取指定矩形区域中任意的值
-        if(SavePhotoPaint==null){
-            SavePhotoPaint=new Paint();
-            SavePhotoPaint.setStyle(Paint.Style.FILL);
-            SavePhotoPaint.setStrokeWidth(1f);
-            SavePhotoPaint.setTextSize(10f);
-            SavePhotoPaint.setColor(Color.GREEN);
-            SavePhotoPaint.setStrokeCap(Paint.Cap.ROUND);
-        }
-        SaveTemps.saveIntTemps(temps,"Origin",maxmin,isOpenTreeTest);//保存原始数据
+            final int[] maxTemp = TempUtil.DDNgetRectTemperatureInfo(showTemps, 0, m_FrameWidth, 0, m_FrameHeight);//获取指定矩形区域中最大的值
+            final int[] anyTemp = TempUtil.DDNgetAnyTemperatureInfo(showTemps, locationAny[0], locationAny[1]);//获取指定矩形区域中任意的值
+            if (SavePhotoPaint == null) {
+                SavePhotoPaint = new Paint();
+                SavePhotoPaint.setStyle(Paint.Style.FILL);
+                SavePhotoPaint.setStrokeWidth(1f);
+                SavePhotoPaint.setTextSize(10f);
+                SavePhotoPaint.setColor(Color.GREEN);
+                SavePhotoPaint.setStrokeCap(Paint.Cap.ROUND);
+            }
+            //SaveTemps.saveIntTemps(temps,"Origin",maxmin,isOpenTreeTest);//保存原始数据
 
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Bitmap bitmap1=bitmap.copy(Bitmap.Config.ARGB_8888, true);
-                Canvas canvas = new Canvas(bitmap1);
-                Paint paint = new Paint();
-                paint.setTextSize(15);
-                paint.setColor(Color.GREEN);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Bitmap bitmap1 = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                    Canvas canvas = new Canvas(bitmap1);
+                    Paint paint = new Paint();
+                    paint.setTextSize(15);
+                    paint.setColor(Color.GREEN);
              /*   canvas.drawText("Max: "+String.valueOf(max),20,20,paint);
                 canvas.drawText("Min: "+String.valueOf(min),20,40,paint);*/
 
 
-                /*绘制温度显示十字架*/
-                DrawTemp(canvas,maxTemp[0],maxTemp[1],maxTemp[2],"max");
-                DrawTemp(canvas,maxTemp[3],maxTemp[4],maxTemp[5],"min");
-                DrawTemp(canvas,anyTemp[0],anyTemp[1],anyTemp[2],"point");
+                    /*绘制温度显示十字架*/
+                    DrawTemp(canvas, maxTemp[0], maxTemp[1], maxTemp[2], "max");
+                    DrawTemp(canvas, maxTemp[3], maxTemp[4], maxTemp[5], "min");
+                    DrawTemp(canvas, anyTemp[0], anyTemp[1], anyTemp[2], "point");
 
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
-                byte[] bytes=baos.toByteArray();
-                Glide.with(MainActivity.this).load(bytes).into(iv_origin);
-            }
-        });
-        return temps;
-    }
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
+                    byte[] bytes = baos.toByteArray();
+                    Glide.with(MainActivity.this).load(bytes).into(iv_origin);
+                }
+            });
+        }
+            return temps;
+
+        }
+
 /**
  * 绘制
  * */
@@ -744,7 +765,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
 
         switch (model){
             case "max":
-                SavePhotoPaint.setColor(Color.RED);
+                SavePhotoPaint.setColor(Color.BLUE);
                 model="Max: ";
                 break;
             case"min":
@@ -752,7 +773,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                 model="Min: ";
                 break;
             case "point":
-                SavePhotoPaint.setColor(Color.BLUE);
+                SavePhotoPaint.setColor(Color.RED);
                 model="Point: ";
                 break;
         }
