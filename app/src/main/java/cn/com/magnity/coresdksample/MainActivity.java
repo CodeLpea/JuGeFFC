@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
     private static final String TAG = "MainActivity";
     //const
     private static final int START_TIMER_ID = 0;
+    private static final int FFC_TIMER = 70;
     private static final int TIMER_INTERVAL = 500;//ms
 
     private static final int STATUS_IDLE = 0;
@@ -84,6 +85,10 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
 
     private int mDegree;//0 - 90, 1 - 180, 2 - 270
     private boolean isOpenTreeTest=false;
+    private int[] FFCZhenTemps=new int[120*160];
+    private int[] FFCZhenTempsALL=new int[120*160];
+    private int FFCZhenTempsCount=3;//指定帧率FFC
+    private int FFCCount=0;//计数
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -153,6 +158,42 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                         mEnumHandler.removeMessages(999);
                         Origin();
                         mEnumHandler.sendEmptyMessageDelayed(999, 66);
+                        break;
+                    case FFC_TIMER:
+                        mEnumHandler.removeMessages(70);
+                        FFCCount++;
+                        FFCZhenTemps=null;
+                        FFCZhenTemps=new int[120*160];
+                        mDev.lock();
+                        mDev.getTemperatureData(FFCZhenTemps,true,true);
+                        mDev.unlock();
+                       for(int i=0;i<FFCZhenTemps.length;i++){
+                           FFCZhenTempsALL[i]=FFCZhenTemps[i]+FFCZhenTempsALL[i];
+                       }
+                        if(FFCCount==zhenCount){
+                            FFCCount=0;
+                            int[] ffctemps=new int[120*160];
+                            for(int i=0;i<FFCZhenTemps.length;i++){
+                                ffctemps[i]=FFCZhenTempsALL[i]/zhenCount;
+                            }
+
+                            int[] readeFfcs=FFC(ffctemps);
+                            Toast.makeText(MainActivity.this,"FFC校准成功 :"+String.valueOf(zhenCount)+"帧率",Toast.LENGTH_LONG).show();
+
+                            if(readeFfcs.length<10){
+                                Toast.makeText(MainActivity.this, "请先校准FFC", Toast.LENGTH_SHORT).show();
+                            }else {
+                                int []afterFfcTemps= AfterFfc(ffctemps,readeFfcs);//将原始数据通过FFc数据处理
+
+                            }
+
+                        }else {
+                            mEnumHandler.sendEmptyMessageDelayed(FFC_TIMER, 70);
+                        }
+                        /*   int []readeFfcs=FFCUtil.readFfc();*/
+                  /*  for(int i=0;i<readeFfcs.length;i++){
+                        readeFfcs[i]=readeFfcs[i]-10000;//还原真实差距
+                    }*/
                         break;
                 }
             }
@@ -394,8 +435,17 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                     mVideoFragment.stopDrawingThread();
                     updateButtons();*/
                     // bitmap= BitmapFactory.decodeResource(getResources(),R.mipmap.ic_launcher);
-                    Origin();
+                  /*  Origin();*/
                     //Current();
+                    if(zhenCount>1){
+                        zhenCount--;
+                        TCompare=null;
+                        TCompare=new int[120*160];
+                        countCompare1=0;
+                        countCompare=0;
+                    }else {
+                        Toast.makeText(MainActivity.this, "已经最低帧率了", Toast.LENGTH_SHORT).show();
+                    }
 
 
                     break;
@@ -405,7 +455,13 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                     mDegree = 0;
                     updateButtons();*/
                   // Current();
-                    Origin();
+                    //Origin();
+                    TCompare=null;
+                    TCompare=new int[120*160];
+                    countCompare1=0;
+                    countCompare=0;
+                    zhenCount++;
+
 
                     break;
                 case R.id.btnFFC://获取FFC图像
@@ -417,20 +473,26 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                     mVideoFragment.stopDrawingThread();
                     mDev.setImageTransform(0, mDegree);
                     play();*/
-                    int []temps=Origin();
+                   /* int []temps=Origin();
                     //Current();
                     int []readeFfcs=FFC(temps);
-
-                  /*   int []readeFfcs=FFCUtil.readFfc();*/
-                  /*  for(int i=0;i<readeFfcs.length;i++){
-                        readeFfcs[i]=readeFfcs[i]-10000;//还原真实差距
-                    }*/
                     if(readeFfcs.length<10){
                         Toast.makeText(MainActivity.this, "请先校准FFC", Toast.LENGTH_SHORT).show();
                     }else {
                         int []afterFfcTemps= AfterFfc(temps,readeFfcs);//将原始数据通过FFc数据处理
 
-                    }
+                    }*/
+
+
+
+                  /*   int []readeFfcs=FFCUtil.readFfc();*/
+                  /*  for(int i=0;i<readeFfcs.length;i++){
+                        readeFfcs[i]=readeFfcs[i]-10000;//还原真实差距
+                    }*/
+
+                    FFCZhenTempsALL=null;
+                    FFCZhenTempsALL=new int[120*160];
+                    mEnumHandler.sendEmptyMessage(FFC_TIMER);
 
 
 
@@ -510,6 +572,9 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                 DrawTemp(canvas,maxTemp[3],maxTemp[4],maxTemp[5],"min");
                 DrawTemp(canvas,anyTemp[0],anyTemp[1],anyTemp[2],"point");
 
+                int cha=maxTemp[0]-maxTemp[3];
+                paint.setColor(Color.BLACK);
+                canvas.drawText("差："+String.valueOf(cha),10,90,paint);
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
 
@@ -572,6 +637,9 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                 DrawTemp(canvas,maxTemp[0],maxTemp[1],maxTemp[2],"max");
                 DrawTemp(canvas,maxTemp[3],maxTemp[4],maxTemp[5],"min");
                 DrawTemp(canvas,anyTemp[0],anyTemp[1],anyTemp[2],"point");
+                int cha=maxTemp[0]-maxTemp[3];
+                paint.setColor(Color.BLACK);
+                canvas.drawText("差："+String.valueOf(cha),10,90,paint);
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
@@ -588,10 +656,12 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
 
     private int[]TCompare=new int[160*120];
     private int[] showPoint=new int[160*120];
-    private int countCompare=0;
+    private int countCompare=0;//比较计数
+    private int countCompare1=0;//比较计数
     private void Compare(int NowTemps[]) {//获得当前原始数据与上一张原始数据的差图
         if(beforeTemps!=null) {
             countCompare++;
+            countCompare1++;
             final Bitmap bitmap;
             int compareTemps[] = new int[beforeTemps.length];
             for (int i = 0; i < beforeTemps.length; i++) {
@@ -599,10 +669,10 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
             }
             for (int i = 0; i < beforeTemps.length; i++) {
                 TCompare[i] = Math.abs(compareTemps[i]) + TCompare[i];
-                showPoint[i] = TCompare[i] / countCompare;
+                showPoint[i] = TCompare[i] / countCompare1;
             }
-            if (countCompare % 10 == 0) {
-                bitmap = TempUtil.CovertToBitMap(TCompare, 0, 100);
+            if (countCompare==zhenCount) {
+                bitmap = TempUtil.CovertToBitMap(showPoint, 0, 100);
      /*   int maxmin[]= TempUtil.MaxMinTemp(compareTemps);//找出最大最小值
         final int max=maxmin[0];
         final int min=maxmin[1];*/
@@ -610,7 +680,9 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                 showPoint = TempUtil.ReLoad(showPoint);//旋转原始数据，x，y都旋转
                 final int[] maxTemp = TempUtil.DDNgetRectTemperatureInfo(showPoint, 0, m_FrameWidth, 0, m_FrameHeight);//获取指定矩形区域中最大的值
                 final int[] anyTemp = TempUtil.DDNgetAnyTemperatureInfo(showPoint, locationAny[0], locationAny[1]);//获取指定矩形区域中任意的值
-
+                TCompare=null;
+                TCompare=new int[120*160];
+                countCompare1=0;
                 //SaveTemps.saveIntTemps(compareTemps,"Compare",maxmin,isOpenTreeTest);//保存比较后的数据
 
                 runOnUiThread(new Runnable() {
@@ -628,7 +700,10 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                         DrawTemp(canvas, maxTemp[0], maxTemp[1], maxTemp[2], "max");
                         DrawTemp(canvas, maxTemp[3], maxTemp[4], maxTemp[5], "min");
                         DrawTemp(canvas, anyTemp[0], anyTemp[1], anyTemp[2], "point");
-
+                        canvas.drawText("帧数："+zhenCount, 10, 10, SavePhotoPaint);
+                        int cha=maxTemp[0]-maxTemp[3];
+                        paint.setColor(Color.WHITE);
+                        canvas.drawText("差："+String.valueOf(cha),10,90,paint);
 
                         ByteArrayOutputStream baos = new ByteArrayOutputStream();
                         bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
@@ -699,7 +774,16 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
     * 获得原始图片
     * */
     public Paint SavePhotoPaint;
+    public int zhenCount=1;//间隔多少帧数
     private int[] Origin() {//获得原始图片
+        if (SavePhotoPaint == null) {
+            SavePhotoPaint = new Paint();
+            SavePhotoPaint.setStyle(Paint.Style.FILL);
+            SavePhotoPaint.setStrokeWidth(1f);
+            SavePhotoPaint.setTextSize(10f);
+            SavePhotoPaint.setColor(Color.GREEN);
+            SavePhotoPaint.setStrokeCap(Paint.Cap.ROUND);
+        }
         int[] temps = new int[160 * 120];
         temps = TreeTest(isOpenTreeTest);//进行三帧处理
 
@@ -707,7 +791,13 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         final Bitmap bitmap;
         Compare(temps);//与上一张进行比较
         beforeTemps = temps;//缓存上一张。
-        if (countCompare % 10 == 0) {
+        if(countCompare==30){//保持30*66ms，然后清零
+            countCompare=0;
+            TCompare=null;
+            TCompare=new int[120*160];
+            countCompare1=0;
+        }
+        if (countCompare==zhenCount) {//每隔指定帧数，显示一次，并保持30*66ms
             bitmap = TempUtil.CovertToBitMap(temps, 0, 100);
             int maxmin[] = TempUtil.MaxMinTemp(temps);//找出最大最小值
             final int max = maxmin[0];
@@ -720,14 +810,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
 
             final int[] maxTemp = TempUtil.DDNgetRectTemperatureInfo(showTemps, 0, m_FrameWidth, 0, m_FrameHeight);//获取指定矩形区域中最大的值
             final int[] anyTemp = TempUtil.DDNgetAnyTemperatureInfo(showTemps, locationAny[0], locationAny[1]);//获取指定矩形区域中任意的值
-            if (SavePhotoPaint == null) {
-                SavePhotoPaint = new Paint();
-                SavePhotoPaint.setStyle(Paint.Style.FILL);
-                SavePhotoPaint.setStrokeWidth(1f);
-                SavePhotoPaint.setTextSize(10f);
-                SavePhotoPaint.setColor(Color.GREEN);
-                SavePhotoPaint.setStrokeCap(Paint.Cap.ROUND);
-            }
+
             //SaveTemps.saveIntTemps(temps,"Origin",maxmin,isOpenTreeTest);//保存原始数据
 
             runOnUiThread(new Runnable() {
@@ -746,6 +829,10 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                     DrawTemp(canvas, maxTemp[0], maxTemp[1], maxTemp[2], "max");
                     DrawTemp(canvas, maxTemp[3], maxTemp[4], maxTemp[5], "min");
                     DrawTemp(canvas, anyTemp[0], anyTemp[1], anyTemp[2], "point");
+
+                    int cha=maxTemp[0]-maxTemp[3];
+                    paint.setColor(Color.BLACK);
+                    canvas.drawText("差："+String.valueOf(cha),10,90,paint);
 
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
