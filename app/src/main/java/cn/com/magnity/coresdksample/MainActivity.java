@@ -556,6 +556,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         AfterTemps=TempUtil.ReLoad(AfterTemps);//旋转原始数据，x，y都旋转
         final int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(AfterTemps,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
         final  int []anyTemp=TempUtil.DDNgetAnyTemperatureInfo(AfterTemps,locationAny[0],locationAny[1]);//获取指定矩形区域中任意的值
+        final int absAvgTemp = TempUtil.DDNgetAvgTemperatureInfo(AfterTemps);//获取指定矩形区域中任意的值
 
         runOnUiThread(new Runnable() {
             @Override
@@ -575,6 +576,8 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                 int cha=maxTemp[0]-maxTemp[3];
                 paint.setColor(Color.BLACK);
                 canvas.drawText("差："+String.valueOf(cha),10,90,paint);
+                canvas.drawText("ABS："+String.valueOf(absAvgTemp),10,70,paint);
+
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
 
@@ -621,6 +624,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
         showFfcTemp=TempUtil.ReLoad(showFfcTemp);//旋转原始数据，x，y都旋转
         final int []maxTemp=TempUtil.DDNgetRectTemperatureInfo(showFfcTemp,0,m_FrameWidth,0,m_FrameHeight);//获取指定矩形区域中最大的值
         final  int []anyTemp=TempUtil.DDNgetAnyTemperatureInfo(showFfcTemp,locationAny[0],locationAny[1]);//获取指定矩形区域中任意的值
+        final int absAvgTemp = TempUtil.DDNgetAvgTemperatureInfo(showFfcTemp);//获取指定矩形区域中任意的值
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -640,6 +644,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                 int cha=maxTemp[0]-maxTemp[3];
                 paint.setColor(Color.BLACK);
                 canvas.drawText("差："+String.valueOf(cha),10,90,paint);
+                canvas.drawText("ABS："+String.valueOf(absAvgTemp),10,70,paint);
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);
@@ -810,6 +815,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
 
             final int[] maxTemp = TempUtil.DDNgetRectTemperatureInfo(showTemps, 0, m_FrameWidth, 0, m_FrameHeight);//获取指定矩形区域中最大的值
             final int[] anyTemp = TempUtil.DDNgetAnyTemperatureInfo(showTemps, locationAny[0], locationAny[1]);//获取指定矩形区域中任意的值
+            final int absAvgTemp = TempUtil.DDNgetAvgTemperatureInfo(showTemps);//获取指定矩形区域中任意的值
 
             //SaveTemps.saveIntTemps(temps,"Origin",maxmin,isOpenTreeTest);//保存原始数据
 
@@ -833,6 +839,7 @@ public class MainActivity extends AppCompatActivity implements MagDevice.ILinkCa
                     int cha=maxTemp[0]-maxTemp[3];
                     paint.setColor(Color.BLACK);
                     canvas.drawText("差："+String.valueOf(cha),10,90,paint);
+                    canvas.drawText("ABS："+String.valueOf(absAvgTemp),10,70,paint);
 
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     bitmap1.compress(Bitmap.CompressFormat.PNG, 100, baos);

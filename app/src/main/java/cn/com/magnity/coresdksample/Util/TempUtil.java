@@ -173,6 +173,23 @@ public class TempUtil {
 
         return Maxresult;
     }
+    /**
+     * 获取每个点的温度与平均值的绝对值的和的平均值。
+     * */
+    public static int DDNgetAvgTemperatureInfo(int[] temps){
+        int getAvg = 0;
+        int abstotal=0;
+        int total=0;
+        for(int i=0;i<temps.length;i++){
+            total=temps[i]+total;
+        }
+        int Avg=total/temps.length;
+        for(int i=0;i<temps.length;i++){
+            abstotal=Math.abs(temps[i]-Avg)+abstotal;
+        }
+        getAvg=abstotal/temps.length;
+        return getAvg;
+    }
 
     /**
      * 九个点的平均值最大的区域
